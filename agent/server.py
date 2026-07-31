@@ -367,11 +367,35 @@ def evaluate(req: EvaluateRequest):
     client = get_anthropic_client()
     resp = client.messages.create(
         model=MODEL,
-        max_tokens=1200,
+        max_tokens=2000,
         system=system_prompt,
         messages=[{"role": "user", "content": f"TRANSCRIPT:\n{transcript_text}"}],
     )
     scorecard = "".join(block.text for block in resp.content if block.type == "text")
+
+    # Debug instrumentation: a live test produced an empty scorecard string
+    # with a 200 status, which shouldn't happen -- log exactly what Claude's
+    # response looked like so we can see why (stop_reason, block types,
+    # token usage) instead of guessing blind again.
+    logger.info(
+        "evaluate: stop_reason=%s, content_block_types=%s, scorecard_len=%d, "
+        "input_tokens=%s, output_tokens=%s, transcript_len=%d",
+        getattr(resp, "stop_reason", None),
+        [getattr(b, "type", None) for b in resp.content],
+        len(scorecard),
+        getattr(resp.usage, "input_tokens", None) if hasattr(resp, "usage") else None,
+        getattr(resp.usage, "output_tokens", None) if hasattr(resp, "usage") else None,
+        len(transcript_text),
+    )
+
+    if not scorecard.strip():
+        logger.error("evaluate: empty scorecard. Full response object: %r", resp)
+        raise HTTPException(
+            status_code=502,
+            detail="The evaluator model returned an empty response -- check Railway logs "
+                    "for the 'evaluate: empty scorecard' entry for details.",
+        )
+
     return {"case_id": req.case_id, "scorecard": scorecard}
 
 
