@@ -28,31 +28,28 @@
       <p id="case-subtitle"></p>
     </div>
 
-    <div class="widget-box">
+    <!-- The widget's internal conversation panel is rendered as
+         position:fixed relative to the *viewport*, inside a Shadow DOM --
+         setting position:static/fixed on the host tag itself doesn't reach
+         that internal panel, which is why earlier attempts still showed it
+         pinned near the header. The fix that actually works: wrapping it in
+         an ancestor with a CSS `transform` -- a transformed ancestor becomes
+         the "containing block" for any position:fixed descendant, even
+         across a Shadow DOM boundary (this is normal CSS containing-block
+         behavior, not something Shadow DOM blocks). That pins the widget's
+         panel to THIS box instead of the viewport. -->
+    <div class="widget-anchor">
       <elevenlabs-convai id="convai-widget"></elevenlabs-convai>
     </div>
-    <p class="hint">
-      Speak naturally -- ask clarifying questions the way you would in a real
-      interview. The interviewer only answers what you ask; it won't steer you
-      toward the answer.
-    </p>
 
-    <div class="results-box">
-      <h3 style="margin-top:0;">Get your results</h3>
-      <p class="hint" style="margin-top:0;">
-        This demo build can't automatically read the conversation ID back
-        from the ElevenLabs widget yet (that wiring depends on their current
-        widget event API -- verify against ElevenLabs' docs, see
-        <code>agent/VOICE_SETUP.md</code>). For now, enter the session id
-        your backend logged for this call (check your <code>agent/sessions/</code>
-        folder, or your server logs, for the most recent file matching this
-        case) and request the scorecard manually.
-      </p>
-      <label for="session-id-input">Session ID</label>
-      <input type="text" id="session-id-input" placeholder="e.g. a93a604e0a8b">
-      <button class="btn" id="evaluate-btn">Get my scorecard</button>
-      <pre class="scorecard" id="scorecard-output" style="display:none;"></pre>
+    <div class="notes-box">
+      <textarea id="notes-field" placeholder="Jot notes here while you talk through the case..."></textarea>
     </div>
+
+    <div class="results-actions">
+      <button class="btn" id="evaluate-btn">Get my scorecard</button>
+    </div>
+    <pre class="scorecard" id="scorecard-output" style="display:none;"></pre>
   </div>
 </div>
 
@@ -76,25 +73,40 @@
     // per-conversation via dynamic-variables, which fills in the
     // {{case_id}} in the Agent's own system prompt ("CASE_ID: {{case_id}}"),
     // and server.py reads it back out of that system message.
+    //
+    // first_message is passed the same way, filling in the Agent's "First
+    // message" field ({{first_message}}) so ElevenLabs speaks the case's
+    // exact opening line itself via its own TTS -- it does NOT go through
+    // our custom LLM. This matters because an empty "First message" field
+    // just makes the agent wait silently for the user to speak first,
+    // which would never happen (the candidate doesn't know the case yet).
+    // Generate our OWN session id client-side, before the call even starts,
+    // instead of trying to capture ElevenLabs' internal conversation id
+    // after the fact. This is the reliable fix: we don't know the exact
+    // shape of the widget's events, and even if we captured ElevenLabs'
+    // own id, our backend never sees it during the call (it's not part of
+    // the custom-LLM request), so it wouldn't match the filename our
+    // server actually saves the transcript under. Generating the id
+    // ourselves and threading it through as a dynamic variable means both
+    // sides agree on it from the very first turn.
+    const generatedSessionId = crypto.randomUUID().slice(0, 12);
+
     const widget = document.getElementById("convai-widget");
     widget.setAttribute("agent-id", CONFIG.agentId);
-    widget.setAttribute("dynamic-variables", JSON.stringify({ case_id: caseInfo.id }));
+    widget.setAttribute(
+      "dynamic-variables",
+      JSON.stringify({ case_id: caseInfo.id, first_message: caseInfo.firstMessage, session_id: generatedSessionId })
+    );
 
     document.getElementById("evaluate-btn").addEventListener("click", async () => {
-      const sessionId = document.getElementById("session-id-input").value.trim();
       const output = document.getElementById("scorecard-output");
-      if (!sessionId) {
-        output.style.display = "block";
-        output.textContent = "Enter a session id first.";
-        return;
-      }
       output.style.display = "block";
       output.textContent = "Scoring...";
       try {
         const res = await fetch(`${CONFIG.backendUrl}/evaluate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ case_id: caseId, session_id: sessionId }),
+          body: JSON.stringify({ case_id: caseId, session_id: generatedSessionId }),
         });
         const data = await res.json();
         output.textContent = res.ok ? data.scorecard : `Error: ${data.detail || res.status}`;

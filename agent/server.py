@@ -46,17 +46,20 @@ Deploy: see VOICE_SETUP.md for Render/Fly.io/Railway steps.
 """
 import hashlib
 import json
+import logging
 import os
 import re
 import time
 import uuid
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+logger = logging.getLogger("uvicorn.error")
 
 from case_loader import load_case
 from interviewer import build_system_prompt as build_interviewer_prompt
@@ -106,20 +109,48 @@ def case_path_for(case_id: str) -> Path:
 
 
 # ---- OpenAI-compatible chat completions ----
+#
+# NOTE: this endpoint deliberately does NOT use a strict Pydantic request
+# model. Every real call from ElevenLabs was failing with 422 Unprocessable
+# Content -- FastAPI's automatic validation rejecting the body before our
+# code ever ran, most likely because a message's `content` isn't always a
+# plain string in whatever ElevenLabs actually sends (some chat-completions
+# style APIs send content as a list of parts, e.g.
+# [{"type": "text", "text": "..."}], not a bare string). Rather than guess
+# again, we parse the raw JSON ourselves, normalize defensively, and log the
+# raw body so any future mismatch is visible in Railway's logs instead of
+# silently 422ing.
 
-class ChatMessage(BaseModel):
-    role: str
-    content: str
+def normalize_content(content) -> str:
+    """Coerce whatever shape `content` arrives in into a plain string."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            elif isinstance(part, dict):
+                parts.append(part.get("text") or part.get("content") or "")
+        return "".join(parts)
+    return str(content)
 
 
-class ChatCompletionRequest(BaseModel):
-    model: Optional[str] = None
-    messages: List[ChatMessage]
-    stream: Optional[bool] = False
-    # ElevenLabs forwards whatever `extra_body` dict you pass at
-    # conversation-start time under this field -- this is how a single
-    # Agent can tell the backend which case to run.
-    elevenlabs_extra_body: Optional[dict] = None
+def normalize_messages(raw_messages) -> list:
+    """Turn whatever `messages` looks like into our plain {role, content}
+    dict shape, tolerating missing/odd fields instead of raising."""
+    normalized = []
+    if not isinstance(raw_messages, list):
+        return normalized
+    for m in raw_messages:
+        if not isinstance(m, dict):
+            continue
+        role = m.get("role") or "user"
+        content = normalize_content(m.get("content"))
+        normalized.append({"role": role, "content": content})
+    return normalized
 
 
 def sse_chunk(payload: dict) -> str:
@@ -127,43 +158,60 @@ def sse_chunk(payload: dict) -> str:
 
 
 CASE_ID_MARKER_RE = re.compile(r"CASE_ID:\s*(\S+)")
+SESSION_ID_MARKER_RE = re.compile(r"SESSION_ID:\s*(\S+)")
 
 
-def case_id_from_system_message(messages: List["ChatMessage"]) -> Optional[str]:
-    """Confirmed-compatible path for the plain <elevenlabs-convai> widget:
-    set the Agent's own system-prompt field (in the ElevenLabs dashboard) to
-    a one-line marker like `CASE_ID: {{case_id}}`, and set the widget's
-    dynamic-variables attribute to fill in {{case_id}} per conversation.
-    ElevenLabs sends the resulting text as a system message to this
-    endpoint -- we just read the case id back out of it."""
+def _marker_from_system_message(messages: list, pattern: "re.Pattern") -> Optional[str]:
+    """Shared helper: the Agent's own system-prompt field (set in the
+    ElevenLabs dashboard) carries one-line markers like `CASE_ID: {{case_id}}`
+    and `SESSION_ID: {{session_id}}`, with the widget's dynamic-variables
+    attribute filling in the {{...}} per conversation. ElevenLabs sends the
+    resulting text as a system message to this endpoint -- we just read the
+    values back out of it. `messages` here is our normalized list of plain
+    {role, content} dicts."""
     for m in messages:
-        if m.role == "system":
-            match = CASE_ID_MARKER_RE.search(m.content)
+        if m["role"] == "system":
+            match = pattern.search(m["content"])
             if match:
                 return match.group(1)
     return None
 
 
-def openai_messages_to_transcript(messages: List[ChatMessage]) -> list:
+def case_id_from_system_message(messages: list) -> Optional[str]:
+    return _marker_from_system_message(messages, CASE_ID_MARKER_RE)
+
+
+def session_id_from_system_message(messages: list) -> Optional[str]:
+    """The frontend (web/session.html) generates a random session id
+    client-side BEFORE the call starts and passes it through the same
+    marker mechanism as case_id. This is the reliable way to correlate a
+    saved transcript file with the browser's "Get my scorecard" button --
+    capturing ElevenLabs' own internal conversation id after the fact
+    wouldn't work, since it's never part of the custom-LLM request body,
+    so this server would have no way to know it during the call."""
+    return _marker_from_system_message(messages, SESSION_ID_MARKER_RE)
+
+
+def openai_messages_to_transcript(messages: list) -> list:
     """Map OpenAI-style roles to our {role: interviewer/candidate, text} shape,
     dropping any system messages (our own system prompt is authoritative,
     not whatever the voice platform's dashboard might also send)."""
     transcript = []
     for m in messages:
-        if m.role == "system":
+        if m["role"] == "system":
             continue
-        role = "interviewer" if m.role == "assistant" else "candidate"
-        transcript.append({"role": role, "text": m.content})
+        role = "interviewer" if m["role"] == "assistant" else "candidate"
+        transcript.append({"role": role, "text": m["content"]})
     return transcript
 
 
-def transcript_to_anthropic_messages(messages: List[ChatMessage]) -> list:
+def transcript_to_anthropic_messages(messages: list) -> list:
     out = []
     for m in messages:
-        if m.role == "system":
+        if m["role"] == "system":
             continue
-        anth_role = "assistant" if m.role == "assistant" else "user"
-        out.append({"role": anth_role, "content": m.content})
+        anth_role = "assistant" if m["role"] == "assistant" else "user"
+        out.append({"role": anth_role, "content": m["content"]})
     if not out:
         # First turn of a brand new call -- same trigger the CLI uses to
         # get the model to open with the case prompt.
@@ -172,15 +220,40 @@ def transcript_to_anthropic_messages(messages: List[ChatMessage]) -> list:
 
 
 @app.post("/v1/chat/completions")
-def chat_completions(
-    req: ChatCompletionRequest,
+async def chat_completions(
+    request: Request,
     case_id: Optional[str] = Query(None, description="Which case file to run -- e.g. case_04_pm_satisfaction_drop_figma. Optional if elevenlabs_extra_body.case_id is provided instead."),
     session_id: Optional[str] = Query(None, description="Optional session id, for naming the saved transcript file"),
 ):
+    try:
+        body = await request.json()
+    except Exception as exc:
+        raw = await request.body()
+        logger.error("chat_completions: failed to parse JSON body: %s -- raw: %r", exc, raw[:2000])
+        raise HTTPException(status_code=400, detail=f"Invalid JSON body: {exc}")
+
+    if not isinstance(body, dict):
+        logger.error("chat_completions: body was not a JSON object: %r", body)
+        raise HTTPException(status_code=400, detail="Request body must be a JSON object.")
+
+    # Log every incoming payload's shape (not the full transcript text, to
+    # keep logs readable) so a future mismatch is visible instead of a bare
+    # 422/500 -- this is what a debugging session on this exact endpoint
+    # needed and didn't have.
+    raw_messages = body.get("messages")
+    logger.info(
+        "chat_completions: received %d raw message(s), keys=%s",
+        len(raw_messages) if isinstance(raw_messages, list) else -1,
+        list(body.keys()),
+    )
+
+    messages = normalize_messages(raw_messages)
+    elevenlabs_extra_body = body.get("elevenlabs_extra_body") or {}
+
     resolved_case_id = (
         case_id
-        or (req.elevenlabs_extra_body or {}).get("case_id")
-        or case_id_from_system_message(req.messages)
+        or elevenlabs_extra_body.get("case_id")
+        or case_id_from_system_message(messages)
     )
     if not resolved_case_id:
         raise HTTPException(
@@ -192,7 +265,7 @@ def chat_completions(
 
     case = load_case(str(case_path_for(resolved_case_id)))
     system_prompt = build_interviewer_prompt(case)
-    anthropic_messages = transcript_to_anthropic_messages(req.messages)
+    anthropic_messages = transcript_to_anthropic_messages(messages)
 
     client = get_anthropic_client()
     resp = client.messages.create(
@@ -206,24 +279,37 @@ def chat_completions(
     # Save the running transcript (incoming history + this new reply) so
     # /evaluate can score it later, same shape interviewer.py produces.
     #
-    # We can't rely on the voice platform passing a stable session_id on
-    # every turn (unverified without a live account -- see VOICE_SETUP.md).
-    # So: if one IS given, use it. Otherwise, derive a stable key from
-    # case_id + the first message in the history, since the platform is
-    # expected to resend the whole growing conversation each turn (that's
-    # the point of the OpenAI chat-completions format) -- the first
-    # message stays constant across a single call, so this naturally
-    # groups every turn of one conversation into the same file without
-    # needing any platform-specific session field. Only the very first
-    # turn (empty history, nothing to hash yet) falls back to a fresh id.
+    # Priority for naming the file:
+    #   1. ?session_id= query param (manual/curl testing)
+    #   2. SESSION_ID: <id> marker in a system message -- this is what
+    #      web/session.html actually uses: it generates a random id
+    #      client-side before the call starts and threads it through via
+    #      the widget's dynamic-variables, so the browser already knows
+    #      the exact id to ask for later (no manual copy-pasting, and no
+    #      dependence on capturing ElevenLabs' own internal conversation id,
+    #      which never reaches this server during the call anyway).
+    #   3. A hash of case_id + the first CANDIDATE (user-role) message, as a
+    #      fallback for callers that don't send the marker at all -- stable
+    #      across turns of one call (the platform resends the whole growing
+    #      history each turn) without needing any explicit session field.
+    #      Hashed off the first USER message rather than messages[0], since
+    #      messages[0] is now a fixed per-case opening line spoken directly
+    #      by ElevenLabs (see firstMessage in config.js) -- identical for
+    #      every candidate on that case, so hashing it would collide
+    #      different people's sessions into one file.
     if session_id:
         sid = session_id
-    elif req.messages:
-        first = req.messages[0].content
-        sid = hashlib.sha1(f"{resolved_case_id}|{first}".encode()).hexdigest()[:12]
     else:
-        sid = uuid.uuid4().hex[:12]
-    transcript = openai_messages_to_transcript(req.messages)
+        sid = session_id_from_system_message(messages)
+        if not sid:
+            first_user_msg = next((m["content"] for m in messages if m["role"] == "user"), None)
+            if first_user_msg:
+                sid = hashlib.sha1(f"{resolved_case_id}|{first_user_msg}".encode()).hexdigest()[:12]
+            else:
+                # No user turn yet at all (e.g. a manual curl test with empty
+                # messages) -- nothing stable to key off, so use a fresh id.
+                sid = uuid.uuid4().hex[:12]
+    transcript = openai_messages_to_transcript(messages)
     transcript.append({"role": "interviewer", "text": reply_text})
     session_path = SESSIONS_DIR / f"{resolved_case_id}_{sid}.json"
     session_path.write_text(json.dumps({"case_id": resolved_case_id, "transcript": transcript}, indent=2))

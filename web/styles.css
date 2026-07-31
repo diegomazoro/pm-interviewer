@@ -168,36 +168,64 @@ nav a {
   justify-content: center;
 }
 
-.results-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
+/* Contains the ElevenLabs widget's internal position:fixed panel to this
+   box instead of the viewport. A `transform` on an ancestor establishes a
+   new CSS containing block for any fixed-position descendant -- that rule
+   applies even across a Shadow DOM boundary, so it reaches the widget's
+   internal panel even though we can't target that panel directly with a
+   selector. min-height gives it room to render at a normal (non-tiny) size;
+   adjust if the widget still looks cramped once you see it live. */
+.widget-anchor {
+  position: relative;
+  transform: translateZ(0);
+  min-height: 150px;
+  background: var(--bg);
+  border: none;
   border-radius: var(--radius);
-  padding: 24px;
+  margin-bottom: 24px;
+  /* Not "hidden" -- the widget's consent modal (Terms and conditions,
+     shown before a call starts) renders taller than this box's fixed
+     height. Hidden overflow was clipping its Agree button off-screen,
+     making it unclickable. Visible lets that modal (and anything else
+     the widget renders) spill out fully instead of getting cut off. */
+  overflow: visible;
+  /* Keep it above the notes field below, since the modal is positioned
+     relative to this box (see the transform note above) and would
+     otherwise render underneath adjacent content. */
+  z-index: 10;
+}
+
+.results-actions {
+  text-align: center;
   margin-top: 24px;
-}
-
-.results-box label {
-  display: block;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-
-.results-box input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text);
-  margin-bottom: 12px;
-  font-size: 14px;
 }
 
 .hint {
   font-size: 13px;
   color: var(--text-muted);
   margin-top: 8px;
+}
+
+.notes-box {
+  margin-top: 24px;
+}
+
+.notes-box textarea {
+  width: 100%;
+  min-height: 420px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.notes-box textarea::placeholder {
+  color: var(--text-muted);
 }
 
 pre.scorecard {
