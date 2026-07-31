@@ -56,7 +56,7 @@ CASES_DIR = BASE_DIR / "cases"
 SESSIONS_DIR = BASE_DIR / "sessions"
 SESSIONS_DIR.mkdir(exist_ok=True)
 
-MODEL = "claude-sonnet-4-5"
+MODEL = "claude-sonnet-5"
 
 app = FastAPI(title="Case Interviewer Voice Backend")
 
