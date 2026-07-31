@@ -8,7 +8,7 @@
 // agent/cases/.
 
 const CONFIG = {
-  backendUrl: "REPLACE_WITH_YOUR_BACKEND_URL", // e.g. https://case-interviewer.onrender.com
+  backendUrl: "https://pm-interviewer-production.up.railway.app",
 
   cases: [
     {
