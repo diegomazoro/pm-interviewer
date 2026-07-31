@@ -16,8 +16,8 @@
   <div id="not-configured" class="widget-box" style="display:none; flex-direction:column; gap:12px;">
     <strong>Setup incomplete</strong>
     <p style="color: var(--text-muted); text-align:center;">
-      <code>web/config.js</code> still has placeholder values for this case's
-      backend URL or ElevenLabs agent ID. Finish
+      <code>web/config.js</code> still has placeholder values for the backend
+      URL or ElevenLabs agent ID. Finish
       <code>agent/VOICE_SETUP.md</code> first, then fill those in.
     </p>
   </div>
@@ -65,13 +65,20 @@
 
   const isPlaceholder = (v) => !v || v.startsWith("REPLACE_WITH");
 
-  if (!caseInfo || isPlaceholder(CONFIG.backendUrl) || isPlaceholder(caseInfo.agentId)) {
+  if (!caseInfo || isPlaceholder(CONFIG.backendUrl) || isPlaceholder(CONFIG.agentId)) {
     document.getElementById("not-configured").style.display = "flex";
   } else {
     document.getElementById("session-content").style.display = "block";
     document.getElementById("case-title").textContent = caseInfo.title;
     document.getElementById("case-subtitle").textContent = caseInfo.subtitle;
-    document.getElementById("convai-widget").setAttribute("agent-id", caseInfo.agentId);
+
+    // One shared Agent for the whole library -- which case runs is passed
+    // per-conversation via dynamic-variables, which fills in the
+    // {{case_id}} in the Agent's own system prompt ("CASE_ID: {{case_id}}"),
+    // and server.py reads it back out of that system message.
+    const widget = document.getElementById("convai-widget");
+    widget.setAttribute("agent-id", CONFIG.agentId);
+    widget.setAttribute("dynamic-variables", JSON.stringify({ case_id: caseInfo.id }));
 
     document.getElementById("evaluate-btn").addEventListener("click", async () => {
       const sessionId = document.getElementById("session-id-input").value.trim();
