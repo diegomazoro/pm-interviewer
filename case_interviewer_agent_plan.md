@@ -37,7 +37,8 @@ Components:
 - Vendor decision made: ElevenLabs Conversational AI (custom-LLM mode), not Hyponema — see Section 2 for reasoning.
 - Built and tested: `agent/server.py` (FastAPI wrapper around `case_loader.py` / `interviewer_prompt.md` / Claude, using a standard Anthropic API key; `/v1/chat/completions` and `/evaluate` both verified end-to-end with a mocked Claude client, including a fix so multi-turn transcripts accumulate into one session file even without a platform-supplied session id).
 - Built: `web/` static frontend — landing page, case picker, and a session page embedding the ElevenLabs widget, driven by a single `config.js` you fill in once the backend and ElevenLabs agents exist.
-- Still to do: actually deploy the backend to a managed host (Render/Fly.io/Railway), create the 8 ElevenLabs Agents in custom-LLM mode and fill their IDs into `config.js`, verify ElevenLabs' exact first-message/call-start behavior against a live account, and automate scorecard retrieval (currently a manual session-id entry — see `agent/VOICE_SETUP.md`).
+- Backend deployed to Railway and verified live (`https://pm-interviewer-production.up.railway.app`) — confirmed end-to-end against the real Claude API (not a mock), correctly returns a case's opening line. `web/config.js`'s `backendUrl` is set.
+- Still to do: create the 8 ElevenLabs Agents in custom-LLM mode pointing at that URL and fill their IDs into `config.js`, verify ElevenLabs' exact first-message/call-start behavior against a live account, and automate scorecard retrieval (currently a manual session-id entry — see `agent/VOICE_SETUP.md`).
 
 **Phase 3 — Scoring pass — done (text-only)**
 - Evaluator prompt and rubric built as described above. Once Phase 2 adds voice, no changes needed here — it scores a transcript regardless of how the transcript was produced.
