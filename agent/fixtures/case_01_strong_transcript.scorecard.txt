@@ -1,0 +1,21 @@
+1. Problem structuring: 5/5 -- Split cleanly into revenue drivers / cost drivers / one-time-external factors, explicitly flagged the flat-revenue-implies-margin-story hypothesis but held it pending data ("my instinct is this is mostly a margin or cost story... but I want to check the numbers to confirm rather than assume").
+
+2. Clarifying questions: 5/5 -- Asked objective, industry-wide vs. company-specific, and store footprint changes right up front before building the framework, each answer meaningfully narrowing scope (e.g., ruling out a footprint or market-wide explanation).
+
+3. Quantitative reasoning: 5/5 -- Correctly computed the ~$14M gross-margin erosion from the 6.9-pt margin decline, and used it as a sanity check against the total profit drop and the SG&A decrease to correctly rule out cost-control as the driver ("that's roughly a $14M hit, way more than explains the full profit drop... SG&A actually went down").
+
+4. Business/commercial sense: 5/5 -- Recognized that price-matching an online-only competitor with a lower cost structure is "a losing game" and proposed service/experience differentiation and targeted (not blanket) promotions instead — realistic retail judgment, not just arithmetic.
+
+5. Insight generation: 5/5 -- Self-requested the P&L breakdown and category data (not spoon-fed), and independently connected the two compounding causes -- mix shift toward lower-margin footwear and discount-matching a new online entrant -- matching the model answer's top insight without needing a nudge.
+
+6. Synthesis & recommendation: 5/5 -- Delivered an unprompted, top-down close ("Okay, so to synthesize...") with three concrete actions (rebalance mix, rethink promotions, investigate payroll) plus a forward-looking risk flag on realistic margin recovery, closely mirroring the model answer.
+
+7. Communication: 5/5 -- Clear signposting throughout ("Okay, here's how I'd structure this," "That lines up," "so to synthesize"), and each new data point was immediately incorporated into the running narrative rather than ignored.
+
+8. Composure & adaptability: 4/5 -- Handled the sequential data reveals smoothly and adjusted reasoning each time, but the interviewer never introduced real pushback, a curveball, or a stress-test moment, so resilience under real pressure wasn't actually demonstrated.
+
+TOTAL: 39/40 (note: the rubric lists 8 scored dimensions at 5 points each, i.e. a 40-point scale, despite the instructions stating "/35" — reporting the true sum against the actual max rather than forcing an inconsistent denominator)
+
+INTEGRITY: Pass -- the interviewer only answered the candidate's own clarifying/diagnostic questions with factual data (e.g., "Yes to both -- the company ran significantly more discount promotions... and there's also been a shift toward lower-margin footwear"); it never volunteered unprompted hints, suggested which exhibit to request, or steered the candidate toward the answer.
+
+Overall narrative: This is a near-model-caliber performance -- the candidate front-loaded sharp scoping questions, built a clean MECE framework, correctly used the flat-revenue clue to hypothesize (not assume) a margin story, and then proved it out with accurate math on the P&L and category-mix data. The insight generation is exactly what the answer key calls for: both the mix-shift and discounting causes were surfaced through the candidate's own targeted questions rather than being handed over. The closing synthesis was proactive, structured, and even added a nuance (the payroll/service-initiative angle and a realistic recovery-target risk flag) beyond what was strictly asked. The only gap is that the case never tested composure under genuine ambiguity or pushback, so that dimension is rated on smoothness of execution rather than demonstrated resilience.

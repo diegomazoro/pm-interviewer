@@ -1,0 +1,22 @@
+{
+  "case_id": "case_01_profitability_peak_performance",
+  "transcript": [
+    {"role": "interviewer", "text": "Our client is Peak Performance Sports, a mid-sized chain of 40 sporting goods retail stores across the Midwest. Profits dropped 30% last year even though revenue was roughly flat. The CEO wants to know why, and what to do. How would you approach this?"},
+    {"role": "candidate", "text": "Before I structure this, a few quick clarifying questions. First, what's the objective exactly -- are we just diagnosing the cause, or also expected to recommend fixes?"},
+    {"role": "interviewer", "text": "Diagnose the driver of the profit decline and recommend actions."},
+    {"role": "candidate", "text": "Got it. And is this profit decline specific to Peak Performance, or is the whole industry seeing this?"},
+    {"role": "interviewer", "text": "Good question -- industry is growing about 2%, and competitors' profits are roughly flat. This looks specific to Peak Performance."},
+    {"role": "candidate", "text": "Useful, that rules out a pure market-wide explanation. Did the store count or footprint change -- any openings or closures?"},
+    {"role": "interviewer", "text": "No -- all 40 stores were open the full year in both years."},
+    {"role": "candidate", "text": "Okay, here's how I'd structure this: since revenue is flat but profit dropped, I want to split this into revenue drivers, cost drivers, and any one-time or external factors. Given revenue is flat, my instinct is this is mostly a margin or cost story rather than a volume story, but I want to check the numbers to confirm rather than assume. Could I see a P&L breakdown?"},
+    {"role": "interviewer", "text": "Sure, here's the breakdown: revenue 198 to 200, COGS 55.1% to 62.0% of revenue, gross profit 44.9% to 38.0%, SG&A 62 to 55, store operating costs flat at 24, net profit 20 to 14."},
+    {"role": "candidate", "text": "So gross margin fell about 7 points, that's roughly a $14M hit, way more than explains the full profit drop -- and SG&A actually went down, so this is entirely a margin story, not a cost-control story. I'd want to know what's driving the margin compression -- did pricing, promotions, or product mix change?"},
+    {"role": "interviewer", "text": "Yes to both -- the company ran significantly more discount promotions this year, and there's also been a shift toward lower-margin footwear and away from higher-margin apparel."},
+    {"role": "candidate", "text": "That lines up. Can I see the category mix and margins by category?"},
+    {"role": "interviewer", "text": "Apparel went from 40% to 32% of revenue at about 55% margin, footwear went from 35% to 45% at about 28% margin, equipment stayed roughly flat around 40% margin."},
+    {"role": "candidate", "text": "That's a meaningful mix shift toward the lowest-margin category. Is there something driving increased discounting specifically -- new competition, maybe?"},
+    {"role": "interviewer", "text": "Yes -- a national online retailer expanded aggressive discounting in the region this year, and Peak Performance matched some of those discounts to stay competitive."},
+    {"role": "candidate", "text": "Okay, so to synthesize: revenue held up, but gross margin collapsed from two compounding causes -- a shift in product mix toward lower-margin footwear, and increased discounting to match a new online competitor. My recommendation: first, rebalance product mix back toward higher-margin apparel through merchandising and floor space, rather than let footwear keep growing its share by default. Second, rethink the promotional strategy -- matching an online-only competitor's discounts head-on is a losing game given their lower cost structure, so I'd look at targeted promotions or differentiation on service/experience instead of blanket discount matching. Third, I noticed payroll hours were mentioned as a possible factor -- I'd want to check if that's linked to a service initiative that could support the apparel push, or if it's just cost creep worth trimming. I'd flag as a risk that we may not fully recover to the old margin given the competitor's now a permanent fixture, so I'd want to set a realistic margin recovery target rather than assume full reversion."},
+    {"role": "interviewer", "text": "That's a good summary of your recommendation. That's all the time we have for this case."}
+  ]
+}

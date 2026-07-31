@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose a case — Case Interview Practice</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav>
+  <a href="index.html">Case Interview Practice</a>
+</nav>
+
+<div class="wrap">
+  <h1>Choose a case</h1>
+  <p style="color: var(--text-muted)">Each one runs as a live voice conversation. Once it starts, the interviewer reads the case prompt out loud and waits for your questions.</p>
+
+  <div class="case-grid" id="case-grid"></div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  const grid = document.getElementById("case-grid");
+  CONFIG.cases.forEach((c) => {
+    const card = document.createElement("div");
+    card.className = "case-card";
+    card.innerHTML = `
+      <span class="badge">${c.type}</span>
+      <h3>${c.title}</h3>
+      <p>${c.subtitle}</p>
+      <a class="btn secondary" href="session.html?case=${encodeURIComponent(c.id)}">Start this case</a>
+    `;
+    grid.appendChild(card);
+  });
+</script>
+</body>
+</html>

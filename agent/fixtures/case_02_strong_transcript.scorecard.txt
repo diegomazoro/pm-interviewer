@@ -1,0 +1,21 @@
+1. Problem structuring: 5/5 -- Before any data, candidate laid out a clean four-part MECE framework ("market attractiveness... BrewCo's own capability fit... entry mode options and their tradeoffs... financial and risk read"), matching the model answer's structure almost exactly.
+
+2. Clarifying questions: 5/5 -- Opened with objective/timeline ("are we deciding purely whether to enter, or also how... does the CEO have a specific revenue target or timeline") and "why Japan specifically, and why now?" before touching data, then kept probing (regulatory barriers, capabilities, channel mix) at the right points in the flow.
+
+3. Quantitative reasoning: 4/5 -- Correctly derived the craft segment as ~4% of the $25B total ($1B/$25B), sanity-checked the $21B mass-market residual, and reasoned budget math cleanly ("JV costs $10-15M, which leaves roughly half our $30M budget free"), but never pushed into deeper modeling (e.g., projected revenue/share capture over the 5-year window) despite that horizon being explicitly given.
+
+4. Business/commercial sense: 5/5 -- Judged that convenience-store volume plus specialty-store prestige both matter for a premium partner, flagged that JV "governance" (decision rights, profit-sharing) matters as much as partner choice, and proposed a Tokyo pilot before wider rollout -- practical, not just academic.
+
+5. Insight generation: 5/5 -- Independently narrowed scope to the craft/premium sub-segment rather than treating "the Japanese beer market" as one block, and self-generated all four entry modes (export, JV, licensing, acquisition) unprompted, reasoning each against the $30M constraint and brand-control needs -- this matches the rubric's 5/5 anchor almost verbatim.
+
+6. Synthesis & recommendation: 5/5 -- Delivered a proactive, top-down closing summary (segment choice → capability gaps → licensing constraint → JV recommendation → rationale → concrete next steps: shortlist 2-3 JV targets, Tokyo pilot, governance risk) without being asked to wrap up.
+
+7. Communication: 5/5 -- Consistently signposted ("first... second... third...", "That reinforces the read...", "One more check before I finalize...") and visibly built each answer on the data just given rather than ignoring it.
+
+8. Composure & adaptability: 5/5 -- On the CEO pushback about JV speed vs. export, held the recommendation with reasoned pushback ("Export is faster on paper, but it doesn't solve the brand-building problem") while offering a sensible hybrid (parallel export pilot) rather than caving or derailing.
+
+TOTAL: 39/40
+
+INTEGRITY: Pass. The case-specific guardrail was never actually tested because the candidate never asked the interviewer "which would you recommend" -- they generated and ranked the options themselves. The interviewer's responses stayed factual/data-only when providing entry-mode tradeoffs (e.g., "Acquisition: roughly $20-30M... gives high control") and never volunteered a ranking, preference, or "I'd suggest" language. No coaching or hinting toward a specific answer was observed anywhere in the transcript.
+
+Overall: This is a near-model performance. The candidate built the exact framework the answer key describes, self-narrowed to the craft/premium segment as the "so what" insight, independently generated all four viable entry modes and reasoned through them against the $30M cap and control needs, and closed with a clear, well-justified JV recommendation plus concrete next steps and a named risk. The only real gap is quantitative depth -- all the arithmetic shown was correct and well-used, but the candidate never asked for or built out revenue/share projections despite the case's explicit 5-year framing. Composure under the pushback question was a highlight, defending the recommendation with substance rather than either caving or getting rattled.

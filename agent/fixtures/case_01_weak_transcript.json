@@ -1,0 +1,16 @@
+{
+  "case_id": "case_01_profitability_peak_performance",
+  "transcript": [
+    {"role": "interviewer", "text": "Our client is Peak Performance Sports, a mid-sized chain of 40 sporting goods retail stores across the Midwest. Profits dropped 30% last year even though revenue was roughly flat. The CEO wants to know why, and what to do. How would you approach this?"},
+    {"role": "candidate", "text": "Okay so profits are down. I think we should look at whether sales are dropping because of competition, and maybe look at expenses too."},
+    {"role": "interviewer", "text": "What would you like to know?"},
+    {"role": "candidate", "text": "Can you just tell me the revenue and profit numbers?"},
+    {"role": "interviewer", "text": "Revenue: $200M this year vs $198M last year. Net profit: $14M this year vs $20M last year."},
+    {"role": "candidate", "text": "So revenue barely changed. Maybe they're spending too much on stores or something. Do you think it's a cost problem?"},
+    {"role": "interviewer", "text": "That's for you to work out -- what would you like to know next?"},
+    {"role": "candidate", "text": "Okay, um, what were the costs like?"},
+    {"role": "interviewer", "text": "Here's the breakdown: COGS went from 55.1% to 62.0% of revenue, SG&A went from 62 to 55, store operating costs stayed flat at 24."},
+    {"role": "candidate", "text": "So SG&A went down, that's good. I think the issue might just be the stores are getting older or something, or maybe rent went up. I'd recommend closing some underperforming stores and cutting costs across the board to get profit back up."},
+    {"role": "interviewer", "text": "That's all the time we have for this case."}
+  ]
+}

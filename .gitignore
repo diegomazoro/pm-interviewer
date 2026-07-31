@@ -1,0 +1,6 @@
+agent/.venv/
+agent/__pycache__/
+**/__pycache__/
+.DS_Store
+agent/sessions/*.json
+agent/sessions/*.scorecard.txt

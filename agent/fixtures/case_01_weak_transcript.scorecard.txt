@@ -1,0 +1,21 @@
+1. Problem structuring: 1/5 -- No framework offered at all; candidate jumped straight to "look at competition, and maybe expenses" with no MECE breakdown (revenue vs. cost vs. external factors) before requesting data.
+
+2. Clarifying questions: 2/5 -- Only two questions asked (revenue/profit, then cost breakdown), both reactive rather than framework-driven; never probed segment/product mix, competitive dynamics, or store-level detail.
+
+3. Quantitative reasoning: 1/5 -- No math performed anywhere; candidate didn't compute the margin decline (44.9%→38.0% equivalent), didn't net COGS vs. SG&A moves, and mischaracterized the SG&A drop as unambiguously "good" while ignoring the far larger COGS jump (55.1%→62.0%) buried in the same sentence.
+
+4. Business/commercial sense: 1/5 -- Final recommendation ("close underperforming stores and cut costs across the board") is generic boilerplate untethered to the data, and actually contradicts the given fact that store operating costs were flat.
+
+5. Insight generation: 1/5 -- Completely missed the core insight (margin erosion driven by COGS, i.e., mix shift/discounting); instead invented unsupported causes ("stores getting older," "rent went up") that the data doesn't support.
+
+6. Synthesis & recommendation: 1/5 -- No top-down "here's what's happening, here's why, here's what to do" structure; recommendation was a vague cost-cutting platitude disconnected from the COGS/margin evidence actually presented.
+
+7. Communication: 2/5 -- Responses were terse with no signposting or hypothesis statements, and the candidate misread the cost exhibit (celebrating the SG&A decrease) rather than synthesizing it against COGS.
+
+8. Composure & adaptability: 2/5 -- Candidate didn't derail or get flustered when the interviewer twice declined to steer ("What would you like to know?" / "That's for you to work out"), but also didn't use that pushback to sharpen rigor -- just continued guessing.
+
+TOTAL: 11/35
+
+INTEGRITY: Pass -- the interviewer gave only the data requested and neutral prompts ("What would you like to know next?"), with no hints, leading questions, or coaching toward the margin/COGS insight.
+
+Overall narrative: This was a weak performance across nearly every dimension -- the candidate never built a framework, asked only two shallow clarifying questions, and did no quantitative analysis at all. Most critically, the candidate had the key exhibit (COGS jumping 6.9 points of revenue) directly in hand and never engaged with it, instead praising the SG&A decrease and fabricating unsupported causes like store aging and rent increases that the data explicitly contradicts (store operating costs were flat). The final recommendation was generic cost-cutting advice disconnected from the diagnosis, missing the case's central "so what" that this is a margin story, not a cost-control story. The candidate remained composed under the interviewer's neutral pushback but never used it as a cue to deepen the analysis, ending the case with essentially the same surface-level guesswork it started with.
