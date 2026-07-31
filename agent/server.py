@@ -15,13 +15,22 @@ users of a third-party product. Get a key from the Claude Console
 (platform.claude.com -> API Keys).
 
 Endpoints:
-- POST /v1/chat/completions  -- OpenAI-compatible endpoint. Point an
-  ElevenLabs Agent's "custom LLM" at this URL (one Agent per case; pass
-  which case via the `case_id` query param, e.g.
-  https://your-host/v1/chat/completions?case_id=case_04_pm_satisfaction_drop_figma).
-  ElevenLabs sends the running conversation on every turn; this endpoint
-  rebuilds the case-specific system prompt, calls Claude, returns the
-  reply, and writes the running transcript to sessions/ on every call (the
+- POST /v1/chat/completions  -- OpenAI-compatible endpoint, ONE ElevenLabs
+  Agent for ALL cases (scales to a large case library without creating an
+  agent per case). Which case runs is resolved, in priority order, from:
+    1. the `case_id` query param (handy for manual/curl testing), or
+    2. `elevenlabs_extra_body.case_id` in the request body -- ElevenLabs
+       lets you pass an arbitrary `extra_body` dict per conversation via
+       their client SDK/widget at call-start time, and forwards it to the
+       custom LLM under this field. This is how one Agent can serve many
+       cases: your frontend picks the case and passes its id as
+       extra_body when starting the voice session, instead of the case
+       being baked into the Agent's dashboard config.
+  Responds in Server-Sent Events (SSE) format, per ElevenLabs' documented
+  custom-LLM protocol (they expect streaming chunks, not a single JSON
+  blob, even though our underlying Claude call here is non-streaming --
+  we just wrap the one full reply in the expected SSE chunk framing).
+  Also writes the running transcript to sessions/ on every call (the
   incoming message list IS the full transcript so far, so this is
   stateless -- no server-side session memory required).
 - POST /evaluate  -- given a case_id + session_id (or a transcript
@@ -33,11 +42,12 @@ Run locally for testing:
     export ANTHROPIC_API_KEY=sk-ant-...
     uvicorn server:app --reload --port 8000
 
-Deploy: see README.md for Render/Fly.io/Railway steps.
+Deploy: see VOICE_SETUP.md for Render/Fly.io/Railway steps.
 """
 import hashlib
 import json
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -45,6 +55,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from case_loader import load_case
@@ -105,6 +116,32 @@ class ChatCompletionRequest(BaseModel):
     model: Optional[str] = None
     messages: List[ChatMessage]
     stream: Optional[bool] = False
+    # ElevenLabs forwards whatever `extra_body` dict you pass at
+    # conversation-start time under this field -- this is how a single
+    # Agent can tell the backend which case to run.
+    elevenlabs_extra_body: Optional[dict] = None
+
+
+def sse_chunk(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+CASE_ID_MARKER_RE = re.compile(r"CASE_ID:\s*(\S+)")
+
+
+def case_id_from_system_message(messages: List["ChatMessage"]) -> Optional[str]:
+    """Confirmed-compatible path for the plain <elevenlabs-convai> widget:
+    set the Agent's own system-prompt field (in the ElevenLabs dashboard) to
+    a one-line marker like `CASE_ID: {{case_id}}`, and set the widget's
+    dynamic-variables attribute to fill in {{case_id}} per conversation.
+    ElevenLabs sends the resulting text as a system message to this
+    endpoint -- we just read the case id back out of it."""
+    for m in messages:
+        if m.role == "system":
+            match = CASE_ID_MARKER_RE.search(m.content)
+            if match:
+                return match.group(1)
+    return None
 
 
 def openai_messages_to_transcript(messages: List[ChatMessage]) -> list:
@@ -137,10 +174,23 @@ def transcript_to_anthropic_messages(messages: List[ChatMessage]) -> list:
 @app.post("/v1/chat/completions")
 def chat_completions(
     req: ChatCompletionRequest,
-    case_id: str = Query(..., description="Which case file to run, e.g. case_04_pm_satisfaction_drop_figma"),
+    case_id: Optional[str] = Query(None, description="Which case file to run -- e.g. case_04_pm_satisfaction_drop_figma. Optional if elevenlabs_extra_body.case_id is provided instead."),
     session_id: Optional[str] = Query(None, description="Optional session id, for naming the saved transcript file"),
 ):
-    case = load_case(str(case_path_for(case_id)))
+    resolved_case_id = (
+        case_id
+        or (req.elevenlabs_extra_body or {}).get("case_id")
+        or case_id_from_system_message(req.messages)
+    )
+    if not resolved_case_id:
+        raise HTTPException(
+            status_code=400,
+            detail="No case_id given -- pass it as a ?case_id= query param, as "
+                    "elevenlabs_extra_body.case_id, or via a system message "
+                    "containing 'CASE_ID: <id>' (see VOICE_SETUP.md).",
+        )
+
+    case = load_case(str(case_path_for(resolved_case_id)))
     system_prompt = build_interviewer_prompt(case)
     anthropic_messages = transcript_to_anthropic_messages(req.messages)
 
@@ -170,32 +220,37 @@ def chat_completions(
         sid = session_id
     elif req.messages:
         first = req.messages[0].content
-        sid = hashlib.sha1(f"{case_id}|{first}".encode()).hexdigest()[:12]
+        sid = hashlib.sha1(f"{resolved_case_id}|{first}".encode()).hexdigest()[:12]
     else:
         sid = uuid.uuid4().hex[:12]
     transcript = openai_messages_to_transcript(req.messages)
     transcript.append({"role": "interviewer", "text": reply_text})
-    session_path = SESSIONS_DIR / f"{case_id}_{sid}.json"
-    session_path.write_text(json.dumps({"case_id": case_id, "transcript": transcript}, indent=2))
+    session_path = SESSIONS_DIR / f"{resolved_case_id}_{sid}.json"
+    session_path.write_text(json.dumps({"case_id": resolved_case_id, "transcript": transcript}, indent=2))
 
-    return {
-        "id": f"chatcmpl-{sid}",
-        "object": "chat.completion",
-        "created": int(time.time()),
-        "model": MODEL,
-        "choices": [
-            {
-                "index": 0,
-                "message": {"role": "assistant", "content": reply_text},
-                "finish_reason": "stop",
-            }
-        ],
-        "usage": {
-            "prompt_tokens": resp.usage.input_tokens,
-            "completion_tokens": resp.usage.output_tokens,
-            "total_tokens": resp.usage.input_tokens + resp.usage.output_tokens,
-        },
-    }
+    # ElevenLabs' custom-LLM protocol expects SSE-streamed chunks (see
+    # VOICE_SETUP.md) -- we wrap the one full reply (our Claude call above
+    # isn't itself streamed yet) in that chunk framing so it's a valid
+    # response either way, whether or not the caller actually reads it
+    # incrementally.
+    def event_stream():
+        yield sse_chunk({
+            "id": f"chatcmpl-{sid}",
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": MODEL,
+            "choices": [{"index": 0, "delta": {"role": "assistant", "content": reply_text}, "finish_reason": None}],
+        })
+        yield sse_chunk({
+            "id": f"chatcmpl-{sid}",
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": MODEL,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        })
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 # ---- Evaluation ----
