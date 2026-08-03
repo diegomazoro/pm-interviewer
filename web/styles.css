@@ -5,8 +5,10 @@
   --border: #2a2f3a;
   --text: #e8eaed;
   --text-muted: #9aa0ac;
-  --accent: #6ea8fe;
-  --accent-text: #08122a;
+  /* Loudcase brand accent: warm amber -- reads as voice/energy rather
+     than a generic SaaS blue, and doubles as the logomark color. */
+  --accent: #ef9f27;
+  --accent-text: #3d2003;
   --radius: 10px;
 }
 
@@ -38,6 +40,17 @@ nav a {
   color: var(--text);
   text-decoration: none;
   font-weight: 600;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+}
+
+.brand svg {
+  flex-shrink: 0;
 }
 
 .hero {
