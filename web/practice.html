@@ -25,7 +25,7 @@
 
 <div class="wrap">
   <h1>Choose a case</h1>
-  <p style="color: var(--text-muted)">Live PM case interviews modeled on real challenges at companies like these. Each one runs as a voice conversation -- the interviewer reads the case prompt out loud and waits for your questions.</p>
+  <p style="color: var(--text-muted)">Talk with an interviewer that presents you a case modeled on real PM challenges at top tech companies.</p>
 
   <div class="case-grid" id="case-grid"></div>
 </div>
@@ -40,7 +40,7 @@
       <span class="badge">${c.type}</span>
       <h3>${c.title}</h3>
       <p>${c.subtitle}</p>
-      <a class="btn secondary" href="session.html?case=${encodeURIComponent(c.id)}">Start this case</a>
+      <a class="btn" href="session.html?case=${encodeURIComponent(c.id)}">Start case</a>
     `;
     grid.appendChild(card);
   });
