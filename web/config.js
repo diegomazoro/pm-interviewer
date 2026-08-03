@@ -1,3 +1,8 @@
+// LOUDCASE -- live, voice-based case interview practice for Product
+// Managers. Positioning: the best place for PMs to rehearse the kind of
+// live case interviews asked at top tech companies, out loud, with
+// instant scored feedback.
+//
 // Fill these in once you've completed agent/VOICE_SETUP.md:
 // - backendUrl: the public URL of your deployed server.py (Render/Fly.io/Railway)
 // - agentId: ONE shared ElevenLabs Agent ID (not per-case -- a single Agent
@@ -16,33 +21,18 @@
 // To add a case to the library later: add an entry here with the exact
 // Section A prompt text from the matching file in agent/cases/, and drop
 // the case file itself in that folder -- nothing else needs to change.
+//
+// NOTE: the 3 original consulting-style cases (case_01-03, in
+// agent/cases/) are intentionally left out of this list -- Loudcase is
+// positioned as PM-focused first, so the public case picker only shows
+// PM cases. The consulting case files are untouched on disk if that
+// changes later.
 
 const CONFIG = {
   backendUrl: "https://pm-interviewer-production.up.railway.app",
   agentId: "agent_6301kyvwxka2fmnbzcszcve9rdey",
 
   cases: [
-    {
-      id: "case_01_profitability_peak_performance",
-      title: "Peak Performance Sports",
-      subtitle: "Why did profit drop 30% on flat revenue?",
-      type: "Consulting",
-      firstMessage: "Welcome, let's get started. Our client is Peak Performance Sports, a mid-sized chain of 40 sporting goods retail stores across the Midwest. The company has been profitable for years, but the CEO just got the results for the last fiscal year and profits dropped 30% versus the prior year, even though revenue was roughly flat. The CEO has hired us to figure out why profit fell and to recommend what to do about it. How would you approach this?",
-    },
-    {
-      id: "case_02_market_entry_brewco_japan",
-      title: "BrewCo",
-      subtitle: "Should a craft brewer enter the Japanese market?",
-      type: "Consulting",
-      firstMessage: "Welcome, let's get started. Our client is BrewCo, a U.S. craft beer company with $150M in annual revenue, strong in the domestic premium beer segment. Growth in the U.S. has slowed, and the CEO is considering entering Japan as the company's first international market. She's asked us: should BrewCo enter Japan, and if so, how? What's your approach?",
-    },
-    {
-      id: "case_03_growth_medequip_new_product",
-      title: "MedEquip Co",
-      subtitle: "Should a hospital-equipment maker launch a home-health product?",
-      type: "Consulting",
-      firstMessage: "Welcome, let's get started. Our client is MedEquip Co, a manufacturer of hospital equipment with $500M in revenue, primarily selling patient monitoring systems to large hospitals. Their R&D team has developed a portable version of their flagship monitor, designed for home health care and small clinics — a new market for the company. The CEO wants to know: should MedEquip launch this new product line, and what would it take to succeed? How would you think about this?",
-    },
     {
       id: "case_04_pm_satisfaction_drop_figma",
       title: "Figma",
@@ -77,6 +67,52 @@ const CONFIG = {
       subtitle: "Which roadmap initiative should get next quarter's capacity?",
       type: "Product",
       firstMessage: "Welcome, let's get started. You're a PM at Linear. Your team has capacity for one major initiative next quarter, and two candidates are on the table: a native mobile app, currently Linear is web/desktop only with a weak mobile web experience, and a customer-requested advanced automation and workflow rules feature for power users. Your engineering lead wants your recommendation with reasoning, not just a gut call. How would you approach deciding?",
+    },
+
+    // Product Sense cases -- open-ended design/improvement prompts, a
+    // different (and harder) PM interview format than the diagnostic
+    // cases above. Type "Product Sense" distinguishes them in the picker.
+    {
+      id: "case_09_pm_product_sense_anthropic",
+      title: "Anthropic",
+      subtitle: "Design longer-running, more autonomous AI agent tasks.",
+      type: "Product Sense",
+      firstMessage: "Welcome, let's get started. You're a Product Manager at Anthropic. Claude can already write code, browse, and take actions on a user's behalf through tool use, but today it mostly works in short bursts with a human checking in frequently. Your team is exploring giving Claude the ability to work on multi-step tasks over much longer stretches of time -- for example, managing a multi-day project end-to-end -- with less constant supervision. How would you approach designing this?",
+    },
+    {
+      id: "case_10_pm_product_sense_openai",
+      title: "OpenAI",
+      subtitle: "Design safeguards for an agent that acts on your behalf.",
+      type: "Product Sense",
+      firstMessage: "Welcome, let's get started. You're a Product Manager at OpenAI. ChatGPT's agent mode can already browse the web and take actions on a user's behalf -- filling out forms, adding items to a cart, submitting information -- and its capabilities are expanding to include actions with real-world consequences, like completing a purchase or booking a reservation. Your team needs to decide how the product should handle these higher-stakes actions. How would you approach this?",
+    },
+    {
+      id: "case_11_pm_product_sense_google",
+      title: "Google",
+      subtitle: "Improve indoor navigation in large venues on Maps.",
+      type: "Product Sense",
+      firstMessage: "Welcome, let's get started. You're a Product Manager at Google, working on Maps. Users navigate Maps confidently outdoors, but once they step inside a large venue -- an airport, a big-box mall, a stadium -- GPS gets unreliable and Maps mostly stops being useful. People end up wandering, asking staff, or falling back on paper signage. How would you approach improving the experience for indoor navigation in these large venues?",
+    },
+    {
+      id: "case_12_pm_product_sense_meta",
+      title: "Meta",
+      subtitle: "Design peer favor-sharing inside Facebook Groups.",
+      type: "Product Sense",
+      firstMessage: "Welcome, let's get started. You're a Product Manager at Meta, working on Facebook Groups. Members of local community groups -- neighborhood groups, parent groups, hobby groups -- already post informal asks and offers in the feed: someone needs a ladder for an afternoon, someone else is driving to the airport and can take a neighbor along, someone can watch a pet for a weekend. Right now this all happens as regular posts and comments, which get buried and are easy to miss. How would you design a way to help members of these groups exchange small favors and skills with each other?",
+    },
+    {
+      id: "case_13_pm_product_sense_netflix",
+      title: "Netflix",
+      subtitle: "Help groups of people agree on what to watch together.",
+      type: "Product Sense",
+      firstMessage: "Welcome, let's get started. You're a Product Manager at Netflix. A common frustration among households and roommates is that multiple people want to watch something together but can't agree on what -- they end up scrolling through the home screen for fifteen minutes, or give up and watch something nobody's excited about. How would you design a feature to help groups of people decide together what to watch?",
+    },
+    {
+      id: "case_14_pm_product_sense_amazon",
+      title: "Amazon",
+      subtitle: "Design proactive replenishment of household essentials via Alexa.",
+      type: "Product Sense",
+      firstMessage: "Welcome, let's get started. You're a Product Manager on the Alexa devices team at Amazon. Customers can already say 'Alexa, reorder paper towels' to repurchase something they've bought before, but usage of this is low -- most people simply forget to reorder essentials until they've already run out. Your team wants to help customers replenish household essentials -- things like paper towels, detergent, coffee -- before they run out, using Alexa. How would you approach designing this?",
     },
   ],
 };

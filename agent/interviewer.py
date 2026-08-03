@@ -35,7 +35,17 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 
 def build_system_prompt(case) -> str:
-    template = (PROMPTS_DIR / "interviewer_prompt.md").read_text(encoding="utf-8")
+    # product_sense cases (open-ended design/improvement prompts) use a
+    # different interviewer ruleset than diagnostic/root-cause cases -- see
+    # prompts/interviewer_prompt_product_sense.md for why (the standard
+    # "how would you measure success" / "what would you cut" follow-ups and
+    # the scripted mid-interview "twist" are specific to that format).
+    template_name = (
+        "interviewer_prompt_product_sense.md"
+        if getattr(case, "case_type", "diagnostic") == "product_sense"
+        else "interviewer_prompt.md"
+    )
+    template = (PROMPTS_DIR / template_name).read_text(encoding="utf-8")
     return template.replace("<<CASE_CONTEXT>>", case.interviewer_context)
 
 

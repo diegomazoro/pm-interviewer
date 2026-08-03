@@ -28,8 +28,13 @@ from case_loader import load_case
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 
-def build_system_prompt(evaluator_only: str, guardrail_reminder: str = "") -> str:
-    rubric = (PROMPTS_DIR / "evaluator_rubric.md").read_text(encoding="utf-8")
+def build_system_prompt(evaluator_only: str, guardrail_reminder: str = "", case_type: str = "diagnostic") -> str:
+    # product_sense cases are graded on a different rubric (business
+    # judgment, user-centricity, product taste, prioritization, composure
+    # under follow-ups) than diagnostic cases (structuring, quant reasoning,
+    # insight generation, etc.) -- see prompts/product_sense_rubric.md.
+    rubric_name = "product_sense_rubric.md" if case_type == "product_sense" else "evaluator_rubric.md"
+    rubric = (PROMPTS_DIR / rubric_name).read_text(encoding="utf-8")
     template = (PROMPTS_DIR / "evaluator_prompt.md").read_text(encoding="utf-8")
     if not guardrail_reminder:
         guardrail_reminder = "(No case-specific guardrail was found for this case -- rely on the general integrity check only.)"
@@ -61,7 +66,7 @@ async def evaluate(session_path: str, case_path: str):
     session = json.loads(Path(session_path).read_text())
     transcript_text = format_transcript(session["transcript"])
 
-    system_prompt = build_system_prompt(case.evaluator_only, case.guardrail_reminder)
+    system_prompt = build_system_prompt(case.evaluator_only, case.guardrail_reminder, case.case_type)
 
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,

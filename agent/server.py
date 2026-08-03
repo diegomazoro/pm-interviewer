@@ -361,7 +361,7 @@ def evaluate(req: EvaluateRequest):
     else:
         raise HTTPException(status_code=400, detail="Provide either session_id or transcript.")
 
-    system_prompt = build_evaluator_prompt(case.evaluator_only, case.guardrail_reminder)
+    system_prompt = build_evaluator_prompt(case.evaluator_only, case.guardrail_reminder, case.case_type)
     transcript_text = format_transcript(transcript)
 
     client = get_anthropic_client()

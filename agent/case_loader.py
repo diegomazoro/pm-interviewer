@@ -25,6 +25,16 @@ Case files are expected to have top-level headers:
 Everything before "## D." is interviewer_context. Everything from "## D."
 onward is evaluator_only. The guardrail reminder is pulled out separately
 via a regex match on the "**Guardrail reminder:**" line found in Section B.
+
+case_type: an optional "**Case type:** <value>" line near the top of the
+file (before Section A). Defaults to "diagnostic" if absent, which is why
+every pre-existing case file (case_01-08) needs no changes -- they're all
+implicitly diagnostic/root-cause cases. "product_sense" is the other
+supported value (open-ended product design/improvement cases, e.g. "design
+a feature for X" -- see cases/case_09+ and interviewer_prompt_product_sense.md
+/ product_sense_rubric.md), which use a different interviewer prompt and
+grading rubric since the format itself is fundamentally different (generative
+design reasoning vs. diagnosing a metric change).
 """
 from dataclasses import dataclass
 from pathlib import Path
@@ -35,6 +45,7 @@ import re
 class Case:
     case_id: str
     title: str
+    case_type: str
     interviewer_context: str
     evaluator_only: str
     guardrail_reminder: str
@@ -46,6 +57,9 @@ def load_case(path: str) -> Case:
 
     title_match = re.search(r"^#\s*(Case File.*)$", text, re.MULTILINE)
     title = title_match.group(1).strip() if title_match else Path(path).stem
+
+    case_type_match = re.search(r"^\*\*Case type:\*\*\s*(\S+)", text, re.MULTILINE)
+    case_type = case_type_match.group(1).strip().lower() if case_type_match else "diagnostic"
 
     split_match = re.search(r"^##\s*D\.\s*Model answer", text, re.MULTILINE)
     if not split_match:
@@ -64,6 +78,7 @@ def load_case(path: str) -> Case:
     return Case(
         case_id=case_id,
         title=title,
+        case_type=case_type,
         interviewer_context=interviewer_context,
         evaluator_only=evaluator_only,
         guardrail_reminder=guardrail_reminder,

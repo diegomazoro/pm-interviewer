@@ -38,6 +38,8 @@ If you find language like this in the transcript, flag INTEGRITY as a FAIL
 specific fact, option, or conclusion was ever explicitly handed over.
 
 Return your scorecard now, in the format: one line per dimension as
-"N. <name>: <score>/5 -- <justification>", then "TOTAL: X/40", then
-"INTEGRITY: <pass/fail + note, explicitly stating whether the case-specific
-guardrail above was honored>", then a short overall narrative paragraph.
+"N. <name>: <score>/5 -- <justification>", then "TOTAL: X/<the maximum
+total stated at the top of the rubric above -- add up the dimensions
+listed there, don't assume a fixed number>", then "INTEGRITY: <pass/fail +
+note, explicitly stating whether the case-specific guardrail above was
+honored>", then a short overall narrative paragraph.
