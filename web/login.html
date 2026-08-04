@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in — Loudcase</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav>
+  <a href="index.html" class="brand">
+    <svg width="26" height="26" viewBox="0 0 36 36" aria-hidden="true">
+      <rect width="36" height="36" rx="10" fill="#ef9f27"/>
+      <rect x="10" y="12" width="4" height="12" rx="2" fill="#3d2003"/>
+      <rect x="17" y="6" width="4" height="24" rx="2" fill="#3d2003"/>
+      <rect x="24" y="10" width="4" height="16" rx="2" fill="#3d2003"/>
+    </svg>
+    Loudcase
+  </a>
+</nav>
+
+<div class="wrap">
+  <div class="auth-card">
+    <h1>Log in</h1>
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input type="email" id="email" required autocomplete="email">
+
+      <label for="password">Password</label>
+      <input type="password" id="password" required autocomplete="current-password">
+
+      <p class="auth-error" id="error-msg" style="display:none;"></p>
+
+      <button type="submit" class="btn">Log in</button>
+    </form>
+    <p class="hint">No account yet? <a href="signup.html">Sign up</a></p>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const errorMsg = document.getElementById("error-msg");
+    errorMsg.style.display = "none";
+
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errorMsg.textContent = data.detail || "Something went wrong.";
+        errorMsg.style.display = "block";
+        return;
+      }
+      localStorage.setItem("loudcase_token", data.token);
+      localStorage.setItem("loudcase_email", data.email);
+      window.location.href = "practice.html";
+    } catch (err) {
+      errorMsg.textContent = `Request failed: ${err}`;
+      errorMsg.style.display = "block";
+    }
+  });
+</script>
+</body>
+</html>

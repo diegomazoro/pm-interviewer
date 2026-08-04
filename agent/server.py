@@ -54,13 +54,14 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger("uvicorn.error")
 
+import auth
 from case_loader import load_case
 from interviewer import build_system_prompt as build_interviewer_prompt
 from evaluator import build_system_prompt as build_evaluator_prompt, format_transcript
@@ -74,6 +75,8 @@ MODEL = "claude-sonnet-5"
 
 app = FastAPI(title="Case Interviewer Voice Backend")
 
+auth.init_db()
+
 # Permissive for development. Restrict allow_origins to your actual
 # frontend domain before going live with real users.
 app.add_middleware(
@@ -82,6 +85,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def require_user(authorization: Optional[str] = Header(None)) -> dict:
+    """FastAPI dependency: pulls the logged-in user off the Authorization
+    header, or raises 401. Used on endpoints the browser calls directly
+    (like /evaluate) -- NOT on /v1/chat/completions, since that's called
+    server-to-server by ElevenLabs and never carries the browser's JWT."""
+    try:
+        return auth.user_from_bearer_header(authorization)
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
 
 
 def get_anthropic_client():
@@ -106,6 +120,41 @@ def case_path_for(case_id: str) -> Path:
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"Unknown case_id: {case_id}")
     return p
+
+
+# ---- Auth ----
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/auth/signup")
+def signup(req: SignupRequest):
+    try:
+        user = auth.create_user(req.email, req.password)
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    conn = auth._get_conn()
+    row = conn.execute("SELECT id FROM users WHERE email = ?", (user["email"],)).fetchone()
+    conn.close()
+    token = auth.issue_token(row["id"], user["email"])
+    return {"token": token, "email": user["email"]}
+
+
+@app.post("/auth/login")
+def login(req: LoginRequest):
+    try:
+        user = auth.verify_login(req.email, req.password)
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    token = auth.issue_token(user["id"], user["email"])
+    return {"token": token, "email": user["email"]}
 
 
 # ---- OpenAI-compatible chat completions ----
@@ -348,7 +397,7 @@ class EvaluateRequest(BaseModel):
 
 
 @app.post("/evaluate")
-def evaluate(req: EvaluateRequest):
+def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
     case = load_case(str(case_path_for(req.case_id)))
 
     if req.transcript is not None:

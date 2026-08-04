@@ -21,7 +21,11 @@
     </svg>
     Loudcase
   </a>
-  <a href="practice.html" class="btn secondary" style="padding:8px 16px;font-size:14px;">Choose a different case</a>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="practice.html" class="btn secondary" style="padding:8px 16px;font-size:14px;">Choose a different case</a>
+    <span id="nav-email" style="color: var(--text-muted); font-size: 14px;"></span>
+    <a href="#" id="logout-link" class="btn secondary" style="padding:8px 16px;font-size:14px;">Log out</a>
+  </div>
 </nav>
 
 <div class="wrap">
@@ -66,8 +70,14 @@
 </div>
 
 <script src="config.js"></script>
+<script src="auth.js"></script>
 <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async></script>
 <script>
+  if (!requireLogin()) {
+    throw new Error("redirecting to login");
+  }
+  wireAccountNav();
+
   const params = new URLSearchParams(window.location.search);
   const caseId = params.get("case");
   const caseInfo = CONFIG.cases.find((c) => c.id === caseId);
@@ -117,9 +127,13 @@
       try {
         const res = await fetch(`${CONFIG.backendUrl}/evaluate`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeader() },
           body: JSON.stringify({ case_id: caseId, session_id: generatedSessionId }),
         });
+        if (res.status === 401) {
+          logout();
+          return;
+        }
         const data = await res.json();
         output.textContent = res.ok ? data.scorecard : `Error: ${data.detail || res.status}`;
       } catch (err) {
