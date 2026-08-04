@@ -68,8 +68,12 @@ from evaluator import build_system_prompt as build_evaluator_prompt, format_tran
 
 BASE_DIR = Path(__file__).parent
 CASES_DIR = BASE_DIR / "cases"
-SESSIONS_DIR = BASE_DIR / "sessions"
-SESSIONS_DIR.mkdir(exist_ok=True)
+# Same DATA_DIR convention as auth.py (see there for why) -- keeps saved
+# transcripts on the same persistent volume as users.db, instead of the
+# ephemeral container disk.
+DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR))
+SESSIONS_DIR = DATA_DIR / "sessions"
+SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 MODEL = "claude-sonnet-5"
 

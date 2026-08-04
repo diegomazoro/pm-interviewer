@@ -24,7 +24,15 @@ import bcrypt
 import jwt
 
 BASE_DIR = Path(__file__).parent
-DB_PATH = BASE_DIR / "users.db"
+
+# On Railway (and most PaaS hosts), the container filesystem is ephemeral --
+# anything written to it is wiped on every redeploy/restart. DATA_DIR lets
+# you point users.db (and sessions/, see server.py) at a mounted persistent
+# volume instead. Falls back to sitting next to this file for local dev,
+# where that ephemerality doesn't matter.
+DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "users.db"
 
 # In production, set JWT_SECRET on Railway to a long random string. Falling
 # back to a fixed dev secret keeps local testing simple, but it means any
