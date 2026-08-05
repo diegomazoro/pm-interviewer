@@ -82,7 +82,7 @@ nav a {
 .logo-marquee {
   overflow: hidden;
   border-bottom: 1px solid var(--border);
-  padding: 22px 0;
+  padding: 4px 0 22px;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
@@ -117,6 +117,68 @@ nav a {
   .logo-track {
     animation: none;
   }
+}
+
+.marquee-title-wrap {
+  padding-bottom: 0;
+}
+
+.marquee-title {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+}
+
+.section-title {
+  font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 28px;
+  text-align: center;
+  margin: 56px 0 32px;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.step {
+  text-align: center;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+  font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin-bottom: 12px;
+}
+
+.step h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.step p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.steps-cta {
+  text-align: center;
+  margin-top: 40px;
 }
 
 .hero {
@@ -195,6 +257,35 @@ nav a {
   font-size: 14px;
 }
 
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 8px;
+}
+
+.filter-chip {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-chip:hover {
+  border-color: var(--accent);
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
 .case-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -203,8 +294,8 @@ nav a {
 }
 
 .case-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
   border-radius: var(--radius);
   padding: 20px;
   display: flex;
@@ -214,7 +305,16 @@ nav a {
 
 .case-card .btn {
   align-self: center;
-  padding: 14px 17px;
+  padding: 8px 20px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.case-card .btn:hover {
+  background: rgba(239, 159, 39, 0.12);
+  color: var(--accent);
+  box-shadow: none;
 }
 
 .case-card-head {
@@ -615,7 +715,7 @@ nav a {
   position: relative;
   transform: translateZ(0);
   min-height: 150px;
-  background: var(--bg);
+  background: transparent;
   border: none;
   border-radius: var(--radius);
   margin-bottom: 24px;
@@ -644,6 +744,12 @@ nav a {
 
 .notes-box {
   margin-top: 24px;
+}
+
+.notes-title {
+  text-align: left;
+  font-size: 16px;
+  margin: 0 0 10px;
 }
 
 .notes-box textarea {
@@ -675,5 +781,5 @@ pre.scorecard {
 }
 
 @media (max-width: 640px) {
-  .features, .case-grid { grid-template-columns: 1fr; }
+  .features, .case-grid, .steps { grid-template-columns: 1fr; }
 }

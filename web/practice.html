@@ -31,6 +31,14 @@
   <h1>Choose a live case</h1>
   <p style="color: var(--text-muted)">Talk with an interviewer that presents you a live case modeled on real PM challenges at top tech companies.</p>
 
+  <div class="filter-bar" id="filter-bar">
+    <button type="button" class="filter-chip active" data-filter="all">All</button>
+    <button type="button" class="filter-chip" data-filter="product sense">Product sense</button>
+    <button type="button" class="filter-chip" data-filter="business sense">Business sense</button>
+    <button type="button" class="filter-chip" data-filter="problem solving">Problem solving</button>
+    <button type="button" class="filter-chip" data-filter="analytical">Analytical</button>
+  </div>
+
   <div class="case-grid" id="case-grid"></div>
 </div>
 
@@ -42,21 +50,39 @@
   } else {
   wireAccountNav();
   const grid = document.getElementById("case-grid");
-  CONFIG.cases.forEach((c) => {
-    const card = document.createElement("div");
-    card.className = "case-card";
-    const initial = c.title.charAt(0).toUpperCase();
-    card.innerHTML = `
-      <div class="case-card-head">
-        <span class="case-icon" aria-hidden="true">${initial}</span>
-        <span class="badge">${c.type}</span>
-      </div>
-      <h3>${c.title}</h3>
-      <p>${c.subtitle}</p>
-      <a class="btn" href="session.html?case=${encodeURIComponent(c.id)}">Start case</a>
-    `;
-    grid.appendChild(card);
+  const filterBar = document.getElementById("filter-bar");
+  let activeFilter = "all";
+
+  function renderCases() {
+    grid.innerHTML = "";
+    CONFIG.cases
+      .filter((c) => activeFilter === "all" || c.type.toLowerCase() === activeFilter)
+      .forEach((c) => {
+        const card = document.createElement("div");
+        card.className = "case-card";
+        const initial = c.title.charAt(0).toUpperCase();
+        card.innerHTML = `
+          <div class="case-card-head">
+            <span class="case-icon" aria-hidden="true">${initial}</span>
+            <span class="badge">${c.type}</span>
+          </div>
+          <h3>${c.title}</h3>
+          <p>${c.subtitle}</p>
+          <a class="btn" href="session.html?case=${encodeURIComponent(c.id)}">Start case</a>
+        `;
+        grid.appendChild(card);
+      });
+  }
+
+  filterBar.querySelectorAll(".filter-chip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeFilter = btn.dataset.filter;
+      filterBar.querySelectorAll(".filter-chip").forEach((b) => b.classList.toggle("active", b === btn));
+      renderCases();
+    });
   });
+
+  renderCases();
   }
 </script>
 </body>
