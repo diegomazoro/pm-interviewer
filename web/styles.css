@@ -97,7 +97,7 @@ nav a {
      past the end of copy 2 before copy 1 looped back around, leaving a
      visible empty gap. 4 copies guarantees there's always more than enough
      content off both edges to stay continuous, even on ultra-wide screens. */
-  animation: marquee-scroll 42s linear infinite;
+  animation: marquee-scroll 52s linear infinite;
 }
 
 .logo-track span {
@@ -202,24 +202,30 @@ nav a {
   margin: 0 auto 32px;
 }
 
+/* CTA button style modeled on pomelo.la/en's "Contact us" button: a
+   diagonal gradient fill (pale highlight -> solid brand color -> lighter
+   highlight) plus sharp corners that smoothly morph into a rounded pill
+   on hover, instead of a static border-radius. Colors adapted to
+   Loudcase's amber palette instead of Pomelo's pink. */
 .btn {
   display: inline-block;
-  background: var(--accent);
+  background: linear-gradient(115.83deg, rgba(255, 224, 179, 0.55) 0%, var(--accent) 55%, var(--accent) 80%, #ffcf80 95%);
   color: #ffffff;
   padding: 14px 28px;
-  border-radius: var(--radius);
+  border-radius: 3px;
   text-decoration: none;
   font-weight: 600;
   border: none;
   cursor: pointer;
   font-size: 16px;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+  transition: border-radius 0.4s cubic-bezier(0.4, 0.03, 0.685, 0.22), box-shadow 0.2s ease;
 }
 
 .btn:hover {
   color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 0 28px 4px rgba(239, 159, 39, 0.55);
+  border-radius: 18px;
+  box-shadow: 0 0 28px 4px rgba(239, 159, 39, 0.45);
 }
 
 .btn.secondary {
@@ -294,7 +300,7 @@ nav a {
 }
 
 .case-card {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.3);
   border: none;
   border-radius: var(--radius);
   padding: 20px;
