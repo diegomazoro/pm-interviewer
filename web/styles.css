@@ -10,6 +10,10 @@
   --accent: #ef9f27;
   --accent-text: #3d2003;
   --radius: 10px;
+  /* Shared warm gradient used across the CTA buttons, the logomark, and
+     the "3 steps" number icons, so those flat-amber elements read as one
+     consistent brand treatment instead of a plain flat fill. */
+  --accent-gradient: linear-gradient(135deg, #d9720f 0%, #ef9f27 55%, #ffcf6b 100%);
 }
 
 * { box-sizing: border-box; }
@@ -158,7 +162,7 @@ nav a {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: var(--accent-text);
   font-weight: 700;
   font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -187,7 +191,7 @@ nav a {
 }
 
 .hero h1 {
-  font-size: 52px;
+  font-size: 73px;
   margin: 0 0 16px;
   font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-weight: 700;
@@ -202,19 +206,21 @@ nav a {
   margin: 0 auto 32px;
 }
 
-/* CTA button style modeled on pomelo.la/en's "Contact us" button: a
-   diagonal gradient fill (pale highlight -> solid brand color -> lighter
-   highlight) plus sharp corners that smoothly morph into a rounded pill
-   on hover, instead of a static border-radius. Colors adapted to
-   Loudcase's amber palette instead of Pomelo's pink. */
+/* CTA button style modeled on pomelo.la/en's "Contact us" button: sharp
+   corners that smoothly morph into a rounded pill on hover, and a shine
+   that sweeps across the TEXT itself (not the button background) on
+   hover, via a background-clip: text gradient. Flat solid amber fill
+   (not a gradient) so it matches the other flat-amber accents on the
+   site -- the logomark and the "3 steps" number circles. */
 .btn {
+  position: relative;
   display: inline-block;
-  background: linear-gradient(115.83deg, rgba(255, 224, 179, 0.55) 0%, var(--accent) 55%, var(--accent) 80%, #ffcf80 95%);
+  background: var(--accent-gradient);
   color: #ffffff;
   padding: 14px 28px;
   border-radius: 3px;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 400;
   border: none;
   cursor: pointer;
   font-size: 16px;
@@ -226,6 +232,25 @@ nav a {
   color: #ffffff;
   border-radius: 18px;
   box-shadow: 0 0 28px 4px rgba(239, 159, 39, 0.45);
+}
+
+/* Wrap a button's label in <span class="btn-shine">Label</span> to get
+   the text-shine sweep. A golden highlight band sits just off-screen at
+   rest (background-position 200% 0) and sweeps across the letters on
+   hover. */
+.btn-shine {
+  background-image: linear-gradient(115deg, #ffffff 0%, #ffffff 40%, #ffe9b3 48%, #ffffff 56%, #ffffff 100%);
+  background-size: 250% 100%;
+  background-position: 200% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #ffffff;
+  transition: background-position 0.7s ease;
+}
+
+.btn:hover .btn-shine {
+  background-position: -50% 0;
 }
 
 .btn.secondary {
@@ -692,6 +717,25 @@ nav a {
 .session-header h1 {
   margin: 0 0 6px;
   font-size: 26px;
+}
+
+/* display: flex (not inline-flex) makes this a block-level box, so it
+   sits flush left regardless of .session-header's text-align: center --
+   matching the left alignment of the "Take your notes" title below. */
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--text);
 }
 
 .session-header p {

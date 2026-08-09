@@ -14,7 +14,14 @@
 <nav>
   <a href="index.html" class="brand">
     <svg width="26" height="26" viewBox="0 0 36 36" aria-hidden="true">
-      <rect width="36" height="36" rx="10" fill="#ef9f27"/>
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#d9720f"/>
+          <stop offset="55%" stop-color="#ef9f27"/>
+          <stop offset="100%" stop-color="#ffcf6b"/>
+        </linearGradient>
+      </defs>
+      <rect width="36" height="36" rx="10" fill="url(#logoGrad)"/>
       <rect x="10" y="12" width="4" height="12" rx="2" fill="#3d2003"/>
       <rect x="17" y="6" width="4" height="24" rx="2" fill="#3d2003"/>
       <rect x="24" y="10" width="4" height="16" rx="2" fill="#3d2003"/>
@@ -60,10 +67,8 @@
       .forEach((c) => {
         const card = document.createElement("div");
         card.className = "case-card";
-        const initial = c.title.charAt(0).toUpperCase();
         card.innerHTML = `
           <div class="case-card-head">
-            <span class="case-icon" aria-hidden="true">${initial}</span>
             <span class="badge">${c.type}</span>
           </div>
           <h3>${c.title}</h3>
