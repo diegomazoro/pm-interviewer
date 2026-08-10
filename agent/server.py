@@ -334,18 +334,10 @@ async def chat_completions(
     case = load_case(str(case_path_for(resolved_case_id)))
     system_prompt = build_interviewer_prompt(case)
     anthropic_messages = transcript_to_anthropic_messages(messages)
-
     client = get_anthropic_client()
-    resp = client.messages.create(
-        model=MODEL,
-        max_tokens=500,
-        system=system_prompt,
-        messages=anthropic_messages,
-    )
-    reply_text = "".join(block.text for block in resp.content if block.type == "text")
 
-    # Save the running transcript (incoming history + this new reply) so
-    # /evaluate can score it later, same shape interviewer.py produces.
+    # sid only depends on `messages` (not on the reply), so it's safe to
+    # resolve before the Claude call.
     #
     # Priority for naming the file:
     #   1. ?session_id= query param (manual/curl testing)
@@ -377,24 +369,63 @@ async def chat_completions(
                 # No user turn yet at all (e.g. a manual curl test with empty
                 # messages) -- nothing stable to key off, so use a fresh id.
                 sid = uuid.uuid4().hex[:12]
-    transcript = openai_messages_to_transcript(messages)
-    transcript.append({"role": "interviewer", "text": reply_text})
-    session_path = SESSIONS_DIR / f"{resolved_case_id}_{sid}.json"
-    session_path.write_text(json.dumps({"case_id": resolved_case_id, "transcript": transcript}, indent=2))
 
-    # ElevenLabs' custom-LLM protocol expects SSE-streamed chunks (see
-    # VOICE_SETUP.md) -- we wrap the one full reply (our Claude call above
-    # isn't itself streamed yet) in that chunk framing so it's a valid
-    # response either way, whether or not the caller actually reads it
-    # incrementally.
+    # Actually stream tokens to ElevenLabs as Claude generates them, instead
+    # of blocking on the full response and sending it as one chunk. This
+    # used to wait for messages.create() to finish completely before
+    # returning anything -- fine for short exchanges, but each turn resends
+    # the WHOLE growing transcript, so Claude's response time (and thus
+    # time-to-first-byte for ElevenLabs) crept up as a call went on. Once
+    # that exceeded ElevenLabs' per-turn response timeout, it dropped the
+    # whole conversation and the widget reset to its idle "Start interview"
+    # state -- exactly the symptom reported ("varies, but always after a
+    # while" + hard reset, not a graceful end). Real streaming keeps
+    # time-to-first-token low regardless of how long the reply itself takes.
     def event_stream():
-        yield sse_chunk({
-            "id": f"chatcmpl-{sid}",
-            "object": "chat.completion.chunk",
-            "created": int(time.time()),
-            "model": MODEL,
-            "choices": [{"index": 0, "delta": {"role": "assistant", "content": reply_text}, "finish_reason": None}],
-        })
+        reply_chunks = []
+        try:
+            with client.messages.stream(
+                model=MODEL,
+                max_tokens=500,
+                system=system_prompt,
+                messages=anthropic_messages,
+            ) as stream:
+                for text in stream.text_stream:
+                    reply_chunks.append(text)
+                    yield sse_chunk({
+                        "id": f"chatcmpl-{sid}",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": MODEL,
+                        "choices": [{"index": 0, "delta": {"role": "assistant", "content": text}, "finish_reason": None}],
+                    })
+        except Exception as exc:
+            # A transient Claude API error (rate limit, timeout, etc.)
+            # mid-stream -- have the interviewer say *something* instead of
+            # the connection just dying, which is what caused the hard
+            # reset before.
+            logger.error("chat_completions: error while streaming Claude response: %s", exc)
+            if not reply_chunks:
+                fallback = "Sorry, could you repeat that?"
+                reply_chunks.append(fallback)
+                yield sse_chunk({
+                    "id": f"chatcmpl-{sid}",
+                    "object": "chat.completion.chunk",
+                    "created": int(time.time()),
+                    "model": MODEL,
+                    "choices": [{"index": 0, "delta": {"role": "assistant", "content": fallback}, "finish_reason": None}],
+                })
+
+        reply_text = "".join(reply_chunks)
+
+        # Save the running transcript (incoming history + this new reply)
+        # now that the full reply is known, so /evaluate can score it later,
+        # same shape interviewer.py produces.
+        transcript = openai_messages_to_transcript(messages)
+        transcript.append({"role": "interviewer", "text": reply_text})
+        session_path = SESSIONS_DIR / f"{resolved_case_id}_{sid}.json"
+        session_path.write_text(json.dumps({"case_id": resolved_case_id, "transcript": transcript}, indent=2))
+
         yield sse_chunk({
             "id": f"chatcmpl-{sid}",
             "object": "chat.completion.chunk",
