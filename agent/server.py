@@ -45,6 +45,7 @@ Run locally for testing:
 Deploy: see VOICE_SETUP.md for Render/Fly.io/Railway steps.
 """
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -101,6 +102,19 @@ def require_user(authorization: Optional[str] = Header(None)) -> dict:
         return auth.user_from_bearer_header(authorization)
     except auth.AuthError as exc:
         raise HTTPException(status_code=401, detail=str(exc))
+
+
+def require_admin(x_admin_secret: Optional[str] = Header(None)) -> None:
+    """Guards the /admin/* routes with a separate shared secret (ADMIN_SECRET
+    env var) -- deliberately not the same mechanism as user JWTs, since this
+    is you looking at the raw database, not a logged-in user action.
+    Fails closed: if ADMIN_SECRET isn't set on the server at all, admin
+    routes are unreachable rather than silently open."""
+    configured = os.environ.get("ADMIN_SECRET")
+    if not configured:
+        raise HTTPException(status_code=503, detail="Admin access is not configured on this server.")
+    if not x_admin_secret or not hmac.compare_digest(x_admin_secret, configured):
+        raise HTTPException(status_code=401, detail="Invalid or missing admin secret.")
 
 
 def get_anthropic_client():
@@ -556,6 +570,30 @@ def history(user: dict = Depends(require_user)):
             detail="Interview history is a Premium feature. Upgrade to see your past scores and feedback.",
         )
     return {"interviews": auth.get_history(user["id"])}
+
+
+# ---- Admin (you only, via ADMIN_SECRET -- see require_admin) ----
+
+@app.get("/admin/users")
+def admin_list_users(_: None = Depends(require_admin)):
+    conn = auth._get_conn()
+    rows = conn.execute(
+        "SELECT id, email, is_premium, interviews_used, created_at FROM users ORDER BY created_at DESC"
+    ).fetchall()
+    conn.close()
+    return {"users": [dict(r) for r in rows]}
+
+
+@app.get("/admin/interview-history")
+def admin_interview_history(_: None = Depends(require_admin)):
+    conn = auth._get_conn()
+    rows = conn.execute(
+        "SELECT ih.id, u.email, ih.case_id, ih.session_id, ih.score_summary, ih.created_at "
+        "FROM interview_history ih JOIN users u ON u.id = ih.user_id "
+        "ORDER BY ih.created_at DESC"
+    ).fetchall()
+    conn.close()
+    return {"history": [dict(r) for r in rows]}
 
 
 @app.get("/health")
