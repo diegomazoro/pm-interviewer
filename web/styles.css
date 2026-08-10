@@ -90,6 +90,16 @@ nav a {
   flex-shrink: 0;
 }
 
+/* Subtle hover feedback on just the icon shape (the SVG's single <rect>,
+   not the "Loudcase" wordmark <text> that follows it). */
+.brand svg > rect {
+  transition: opacity 0.2s ease;
+}
+
+.brand:hover svg > rect {
+  opacity: 0.75;
+}
+
 .logo-marquee {
   overflow: hidden;
   border-bottom: 1px solid var(--border);
