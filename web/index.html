@@ -129,7 +129,7 @@
         <tr>
           <th class="pricing-table-label"></th>
           <th>
-            <div class="pricing-col-head">Basic</div>
+            <div class="pricing-col-head">Free</div>
             <div class="pricing-col-price">$0</div>
           </th>
           <th class="premium-col">
@@ -142,7 +142,7 @@
       <tbody>
         <tr>
           <td class="pricing-table-label">Live case interviews</td>
-          <td>8 total, free</td>
+          <td>5 total, free</td>
           <td class="premium-col">Unlimited</td>
         </tr>
         <tr>
@@ -170,16 +170,14 @@
         <tr>
           <td class="pricing-table-label"></td>
           <td><a class="btn secondary" href="practice.html" style="width:100%; text-align:center; box-sizing:border-box; display:block;">Start free</a></td>
-          <td class="premium-col"><a class="btn" href="mailto:diegomazorosete@gmail.com?subject=Loudcase%20Premium" style="width:100%; text-align:center; box-sizing:border-box; display:block;"><span class="btn-shine">Get Premium</span></a></td>
+          <td class="premium-col">
+            <button class="btn" id="get-premium-btn" style="width:100%; box-sizing:border-box; display:block;"><span class="btn-shine">Get Premium</span></button>
+            <p class="pricing-error" id="premium-error" style="display:none;"></p>
+          </td>
         </tr>
       </tfoot>
     </table>
   </div>
-
-  <p class="hint" style="text-align:center; margin-top:16px;">
-    Premium access is arranged directly for now -- the "Get Premium" button
-    opens an email so we can set you up. Self-serve checkout is coming soon.
-  </p>
 </div>
 
 <div class="wrap">
@@ -190,5 +188,46 @@
     companies.
   </p>
 </div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script>
+  document.getElementById("get-premium-btn").addEventListener("click", async () => {
+    const errorMsg = document.getElementById("premium-error");
+    errorMsg.style.display = "none";
+
+    // Buying Premium requires an account, so payment is tied to it.
+    // Not logged in -- send to login, then bounce straight back here.
+    if (!localStorage.getItem("loudcase_token")) {
+      window.location.href = "login.html?next=" + encodeURIComponent("index.html#pricing");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/billing/create-checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({
+          success_url: window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "premium-success.html",
+          cancel_url: window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "index.html#pricing",
+        }),
+      });
+      if (res.status === 401) {
+        window.location.href = "login.html?next=" + encodeURIComponent("index.html#pricing");
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        errorMsg.textContent = data.detail || "Something went wrong starting checkout.";
+        errorMsg.style.display = "block";
+        return;
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      errorMsg.textContent = `Request failed: ${err}`;
+      errorMsg.style.display = "block";
+    }
+  });
+</script>
 </body>
 </html>

@@ -45,6 +45,9 @@ JWT_TTL_SECONDS = 60 * 60 * 24 * 30  # 30 days -- this is a practice tool, not a
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
+FREE_INTERVIEW_LIMIT = 5
+
+
 def init_db() -> None:
     conn = sqlite3.connect(DB_PATH)
     conn.execute(
@@ -53,6 +56,36 @@ def init_db() -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+        """
+    )
+
+    # Safe migration: add these columns if this is an existing users.db from
+    # before Premium existed. SQLite's ADD COLUMN doesn't support "IF NOT
+    # EXISTS", so check pragma table_info first instead of assuming a fresh
+    # table.
+    existing_cols = {row[1] for row in conn.execute("PRAGMA table_info(users)")}
+    if "is_premium" not in existing_cols:
+        conn.execute("ALTER TABLE users ADD COLUMN is_premium INTEGER NOT NULL DEFAULT 0")
+    if "interviews_used" not in existing_cols:
+        conn.execute("ALTER TABLE users ADD COLUMN interviews_used INTEGER NOT NULL DEFAULT 0")
+
+    # One row per scored interview (i.e. one row per successful /evaluate
+    # call), regardless of plan -- this is both the free-tier usage counter
+    # source of truth and the Premium "history" data. We always store the
+    # FULL scorecard here even for free users (who only ever see the score
+    # extract in the API response) so that if they upgrade later, their
+    # earlier interviews already have full feedback available in history.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS interview_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            case_id TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            score_summary TEXT,
+            scorecard TEXT NOT NULL,
             created_at INTEGER NOT NULL
         )
         """
@@ -144,3 +177,61 @@ def user_from_bearer_header(authorization: Optional[str]) -> dict:
     token = authorization[len("Bearer "):].strip()
     payload = decode_token(token)
     return {"id": int(payload["sub"]), "email": payload["email"]}
+
+
+# ---- Premium / usage ----
+
+def get_billing_status(user_id: int) -> dict:
+    conn = _get_conn()
+    row = conn.execute(
+        "SELECT is_premium, interviews_used FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    conn.close()
+    if row is None:
+        raise AuthError("User not found.")
+    return {
+        "is_premium": bool(row["is_premium"]),
+        "interviews_used": row["interviews_used"],
+        "free_limit": FREE_INTERVIEW_LIMIT,
+    }
+
+
+def set_premium(user_id: int) -> None:
+    conn = _get_conn()
+    conn.execute("UPDATE users SET is_premium = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def set_premium_by_email(email: str) -> None:
+    conn = _get_conn()
+    conn.execute("UPDATE users SET is_premium = 1 WHERE email = ?", (_normalize_email(email),))
+    conn.commit()
+    conn.close()
+
+
+def record_interview(user_id: int, case_id: str, session_id: str, score_summary: str, scorecard: str) -> None:
+    """Saves the full scorecard to history and bumps the user's usage
+    counter. Called once per successful /evaluate call, for every user
+    (free or premium) -- the counter is only ever enforced for free users,
+    but we track it for everyone for consistency/analytics."""
+    conn = _get_conn()
+    conn.execute(
+        "INSERT INTO interview_history (user_id, case_id, session_id, score_summary, scorecard, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, case_id, session_id, score_summary, scorecard, int(time.time())),
+    )
+    conn.execute("UPDATE users SET interviews_used = interviews_used + 1 WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_history(user_id: int) -> list:
+    conn = _get_conn()
+    rows = conn.execute(
+        "SELECT case_id, session_id, score_summary, scorecard, created_at "
+        "FROM interview_history WHERE user_id = ? ORDER BY created_at DESC",
+        (user_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

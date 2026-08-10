@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your history — Loudcase</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav>
+  <a href="index.html" class="brand">
+    <svg width="26" height="26" viewBox="0 0 36 36" aria-hidden="true">
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#d9720f"/>
+          <stop offset="55%" stop-color="#ef9f27"/>
+          <stop offset="100%" stop-color="#ffcf6b"/>
+        </linearGradient>
+      </defs>
+      <rect width="36" height="36" rx="10" fill="url(#logoGrad)"/>
+      <rect x="10" y="12" width="4" height="12" rx="2" fill="#3d2003"/>
+      <rect x="17" y="6" width="4" height="24" rx="2" fill="#3d2003"/>
+      <rect x="24" y="10" width="4" height="16" rx="2" fill="#3d2003"/>
+    </svg>
+    Loudcase
+  </a>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="practice.html" class="btn secondary" style="padding:8px 16px;font-size:14px;">Choose a case</a>
+    <span id="nav-email" style="color: var(--text-muted); font-size: 14px;"></span>
+    <a href="#" id="logout-link" class="btn secondary" style="padding:8px 16px;font-size:14px;">Log out</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>Your history</h1>
+  <p style="color: var(--text-muted)">Every scored interview you've run, with the full feedback from each session.</p>
+
+  <div id="upsell" style="display:none;" class="auth-card">
+    <h1 style="font-size:20px;">History is a Premium feature</h1>
+    <p class="auth-subtitle">Upgrade to keep every score and piece of feedback you've ever received, all in one place.</p>
+    <a class="btn" href="index.html#pricing" style="width:100%; text-align:center; box-sizing:border-box;">
+      <span class="btn-shine">See plans</span>
+    </a>
+  </div>
+
+  <div id="history-list" style="margin-top:24px; display:flex; flex-direction:column; gap:16px;"></div>
+  <p id="empty-msg" style="display:none; color: var(--text-muted);">No scored interviews yet -- head to a case and finish one to see it here.</p>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script>
+  if (!requireLogin()) {
+    throw new Error("redirecting to login");
+  }
+  wireAccountNav();
+
+  function caseTitle(caseId) {
+    const c = CONFIG.cases.find((c) => c.id === caseId);
+    return c ? c.title : caseId;
+  }
+
+  (async () => {
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/history`, { headers: authHeader() });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      if (res.status === 403) {
+        document.getElementById("upsell").style.display = "block";
+        return;
+      }
+      const data = await res.json();
+      const list = document.getElementById("history-list");
+      if (!data.interviews || data.interviews.length === 0) {
+        document.getElementById("empty-msg").style.display = "block";
+        return;
+      }
+      data.interviews.forEach((item) => {
+        const date = new Date(item.created_at * 1000).toLocaleDateString(undefined, {
+          year: "numeric", month: "short", day: "numeric",
+        });
+        const entry = document.createElement("div");
+        entry.className = "case-card";
+        entry.innerHTML = `
+          <div class="case-card-head">
+            <span class="badge">${caseTitle(item.case_id)}</span>
+          </div>
+          <h3>${item.score_summary || "Score unavailable"}</h3>
+          <p style="color: var(--text-muted); font-size:13px;">${date}</p>
+          <pre class="scorecard" style="margin:0;">${item.scorecard}</pre>
+        `;
+        list.appendChild(entry);
+      });
+    } catch (err) {
+      document.getElementById("history-list").textContent = `Failed to load history: ${err}`;
+    }
+  })();
+</script>
+</body>
+</html>

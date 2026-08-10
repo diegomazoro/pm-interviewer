@@ -163,7 +163,8 @@
       }
       localStorage.setItem("loudcase_token", data.token);
       localStorage.setItem("loudcase_email", data.email);
-      window.location.href = "practice.html";
+      const next = new URLSearchParams(window.location.search).get("next");
+      window.location.href = next || "practice.html";
     } catch (err) {
       errorMsg.textContent = `Request failed: ${err}`;
       errorMsg.style.display = "block";

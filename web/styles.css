@@ -948,6 +948,12 @@ pre.scorecard {
   margin-bottom: 8px;
 }
 
+.pricing-error {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
 .pricing-check,
 .pricing-dash {
   display: inline-flex;

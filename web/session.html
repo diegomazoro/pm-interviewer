@@ -148,6 +148,10 @@
           return;
         }
         const data = await res.json();
+        if (res.status === 402) {
+          output.innerHTML = `${data.detail}<br><br><a class="btn" href="index.html#pricing"><span class="btn-shine">See Premium</span></a>`;
+          return;
+        }
         output.textContent = res.ok ? data.scorecard : `Error: ${data.detail || res.status}`;
       } catch (err) {
         output.textContent = `Request failed: ${err}`;

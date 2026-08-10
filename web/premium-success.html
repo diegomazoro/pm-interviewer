@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Premium — Loudcase</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav>
+  <a href="index.html" class="brand">
+    <svg width="26" height="26" viewBox="0 0 36 36" aria-hidden="true">
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#d9720f"/>
+          <stop offset="55%" stop-color="#ef9f27"/>
+          <stop offset="100%" stop-color="#ffcf6b"/>
+        </linearGradient>
+      </defs>
+      <rect width="36" height="36" rx="10" fill="url(#logoGrad)"/>
+      <rect x="10" y="12" width="4" height="12" rx="2" fill="#3d2003"/>
+      <rect x="17" y="6" width="4" height="24" rx="2" fill="#3d2003"/>
+      <rect x="24" y="10" width="4" height="16" rx="2" fill="#3d2003"/>
+    </svg>
+    Loudcase
+  </a>
+</nav>
+
+<div class="wrap">
+  <div class="auth-card" style="text-align:center; max-width:440px;">
+    <h1 id="status-title">Confirming your payment...</h1>
+    <p class="auth-subtitle" id="status-body">
+      This usually takes just a few seconds.
+    </p>
+    <a class="btn" href="practice.html" id="continue-btn" style="display:none; width:100%; text-align:center; box-sizing:border-box;">
+      <span class="btn-shine">Start practicing</span>
+    </a>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script>
+  if (!requireLogin()) {
+    throw new Error("redirecting to login");
+  }
+
+  const titleEl = document.getElementById("status-title");
+  const bodyEl = document.getElementById("status-body");
+  const continueBtn = document.getElementById("continue-btn");
+
+  // The Stripe webhook that actually marks the account Premium can arrive
+  // a moment after Stripe redirects the browser back here, so poll
+  // /billing/status for a few seconds instead of assuming it's done
+  // immediately.
+  async function checkStatus(attempt) {
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/billing/status`, {
+        headers: authHeader(),
+      });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
+      const data = await res.json();
+      if (data.is_premium) {
+        titleEl.textContent = "You're Premium!";
+        bodyEl.textContent = "Unlimited interviews, detailed feedback, and your full history are unlocked.";
+        continueBtn.style.display = "inline-block";
+        return;
+      }
+    } catch (err) {
+      // fall through to retry
+    }
+
+    if (attempt >= 10) {
+      titleEl.textContent = "Still confirming...";
+      bodyEl.textContent = "Your payment went through, but activation is taking longer than expected. "
+        + "Refresh this page in a minute, or reach out if it doesn't update.";
+      continueBtn.style.display = "inline-block";
+      return;
+    }
+    setTimeout(() => checkStatus(attempt + 1), 1500);
+  }
+
+  checkStatus(0);
+</script>
+</body>
+</html>

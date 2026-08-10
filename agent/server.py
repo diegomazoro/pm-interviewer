@@ -62,6 +62,7 @@ from pydantic import BaseModel
 logger = logging.getLogger("uvicorn.error")
 
 import auth
+import billing
 from case_loader import load_case
 from interviewer import build_system_prompt as build_interviewer_prompt
 from evaluator import build_system_prompt as build_evaluator_prompt, format_transcript
@@ -394,6 +395,16 @@ async def chat_completions(
 
 # ---- Evaluation ----
 
+SCORE_LINE_RE = re.compile(r"TOTAL:?\s*\d+\s*/\s*\d+", re.IGNORECASE)
+
+
+def extract_score_summary(scorecard: str) -> Optional[str]:
+    """Pulls just the 'TOTAL: X/Y' line out of a full scorecard -- this is
+    what free-plan users see instead of the full rubric breakdown."""
+    match = SCORE_LINE_RE.search(scorecard)
+    return match.group(0) if match else None
+
+
 class EvaluateRequest(BaseModel):
     case_id: str
     session_id: Optional[str] = None
@@ -402,6 +413,18 @@ class EvaluateRequest(BaseModel):
 
 @app.post("/evaluate")
 def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
+    # Free-plan usage gate. Checked BEFORE the (paid, per-call) Claude
+    # request below so a free user who's used up their 5 doesn't cost us
+    # an evaluator call just to get turned away. Premium is unlimited.
+    status = auth.get_billing_status(user["id"])
+    if not status["is_premium"] and status["interviews_used"] >= auth.FREE_INTERVIEW_LIMIT:
+        raise HTTPException(
+            status_code=402,
+            detail=f"You've used all {auth.FREE_INTERVIEW_LIMIT} free scored interviews on the "
+                    "Free plan. Upgrade to Premium for unlimited interviews, detailed feedback, "
+                    "and your full score history.",
+        )
+
     case = load_case(str(case_path_for(req.case_id)))
 
     if req.transcript is not None:
@@ -449,7 +472,90 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
                     "for the 'evaluate: empty scorecard' entry for details.",
         )
 
-    return {"case_id": req.case_id, "scorecard": scorecard}
+    score_summary = extract_score_summary(scorecard)
+
+    # Always store the FULL scorecard in history, for every user -- if a
+    # free user upgrades later, their earlier interviews already have
+    # full feedback available rather than just the score they originally
+    # saw. This call also increments the user's usage counter.
+    auth.record_interview(
+        user_id=user["id"],
+        case_id=req.case_id,
+        session_id=req.session_id or "adhoc",
+        score_summary=score_summary,
+        scorecard=scorecard,
+    )
+
+    if status["is_premium"]:
+        return {"case_id": req.case_id, "scorecard": scorecard, "is_premium": True}
+
+    # Free plan: score only, no detailed rubric breakdown.
+    preview = score_summary or "Your score is being calculated."
+    remaining = auth.FREE_INTERVIEW_LIMIT - status["interviews_used"] - 1
+    upsell = (
+        f"\n\n---\nDetailed feedback is a Premium feature. "
+        f"You have {max(remaining, 0)} free scored interview(s) left. "
+        f"Upgrade for unlimited interviews, detailed feedback, and full history."
+    )
+    return {"case_id": req.case_id, "scorecard": preview + upsell, "is_premium": False}
+
+
+# ---- Billing (Stripe) ----
+
+class CreateCheckoutRequest(BaseModel):
+    success_url: str
+    cancel_url: str
+
+
+@app.post("/billing/create-checkout-session")
+def create_checkout_session(req: CreateCheckoutRequest, user: dict = Depends(require_user)):
+    try:
+        url = billing.create_checkout_session(user["id"], user["email"], req.success_url, req.cancel_url)
+    except billing.BillingError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    return {"url": url}
+
+
+@app.post("/billing/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    try:
+        event = billing.verify_webhook(payload, sig_header)
+    except billing.BillingError as exc:
+        logger.error("billing webhook: %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if event["type"] == "checkout.session.completed":
+        user_id = billing.user_id_from_checkout_event(event)
+        if user_id:
+            auth.set_premium(user_id)
+            logger.info("billing: marked user_id=%s as premium", user_id)
+        else:
+            logger.error("billing: checkout.session.completed with no user id in event: %r", event)
+
+    return {"received": True}
+
+
+@app.get("/billing/status")
+def billing_status(user: dict = Depends(require_user)):
+    try:
+        return auth.get_billing_status(user["id"])
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+# ---- History (Premium) ----
+
+@app.get("/history")
+def history(user: dict = Depends(require_user)):
+    status = auth.get_billing_status(user["id"])
+    if not status["is_premium"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Interview history is a Premium feature. Upgrade to see your past scores and feedback.",
+        )
+    return {"interviews": auth.get_history(user["id"])}
 
 
 @app.get("/health")
