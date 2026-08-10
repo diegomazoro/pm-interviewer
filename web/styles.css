@@ -90,6 +90,17 @@ nav a {
   flex-shrink: 0;
 }
 
+/* Same background-clip: text technique as .btn-shine, applied to the
+   wordmark so "Loudcase" reads in the brand's amber gradient instead of
+   flat text. */
+.brand-text {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
 .logo-marquee {
   overflow: hidden;
   border-bottom: 1px solid var(--border);
