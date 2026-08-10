@@ -798,11 +798,6 @@ nav a {
   z-index: 10;
 }
 
-.results-actions {
-  text-align: center;
-  margin-top: 24px;
-}
-
 .hint {
   font-size: 13px;
   color: var(--text-muted);
@@ -845,6 +840,66 @@ pre.scorecard {
   padding: 16px;
   font-size: 13px;
   margin-top: 16px;
+}
+
+/* ---- Scorecard popup ----
+   Shown automatically once the ElevenLabs widget's own "End call" button
+   ends the conversation (see session.html's conversationEnded listener),
+   instead of a manual "Get my scorecard" button at the bottom of the page. */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.modal-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-card h2 {
+  font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+
+.modal-card p {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.modal-close:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 @media (max-width: 640px) {
