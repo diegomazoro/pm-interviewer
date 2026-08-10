@@ -77,14 +77,14 @@
       // fall through to retry
     }
 
-    if (attempt >= 10) {
+    if (attempt >= 20) {
       titleEl.textContent = "Still confirming...";
       bodyEl.textContent = "Your payment went through, but activation is taking longer than expected. "
         + "Refresh this page in a minute, or reach out if it doesn't update.";
       continueBtn.style.display = "inline-block";
       return;
     }
-    setTimeout(() => checkStatus(attempt + 1), 1500);
+    setTimeout(() => checkStatus(attempt + 1), 2000);
   }
 
   checkStatus(0);
