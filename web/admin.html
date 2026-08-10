@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Loudcase</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav>
+  <a href="index.html" class="brand">
+    <svg width="26" height="26" viewBox="0 0 36 36" aria-hidden="true">
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#d9720f"/>
+          <stop offset="55%" stop-color="#ef9f27"/>
+          <stop offset="100%" stop-color="#ffcf6b"/>
+        </linearGradient>
+      </defs>
+      <rect width="36" height="36" rx="10" fill="url(#logoGrad)"/>
+      <rect x="10" y="12" width="4" height="12" rx="2" fill="#3d2003"/>
+      <rect x="17" y="6" width="4" height="24" rx="2" fill="#3d2003"/>
+      <rect x="24" y="10" width="4" height="16" rx="2" fill="#3d2003"/>
+    </svg>
+    Loudcase
+  </a>
+  <div id="nav-actions" style="display:none;">
+    <a href="#" id="admin-logout" class="btn secondary" style="padding:8px 16px;font-size:14px;">Log out</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <!-- Secret gate: shown until a working admin secret is in sessionStorage.
+       sessionStorage (not localStorage) so the secret clears itself when
+       the tab/browser closes, rather than sitting around indefinitely. -->
+  <div id="gate" class="auth-card">
+    <h1>Admin access</h1>
+    <form id="gate-form">
+      <label for="secret">Admin secret</label>
+      <input type="password" id="secret" autocomplete="off" required>
+      <button type="submit" class="btn">View dashboard</button>
+      <p class="auth-error" id="gate-error" style="display:none;"></p>
+    </form>
+  </div>
+
+  <!-- Dashboard: shown once the secret has been verified against the API. -->
+  <div id="dashboard" style="display:none;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <h1 style="margin:0;">Users</h1>
+      <button class="btn secondary" id="refresh-btn" style="padding:8px 16px;font-size:14px;">Refresh</button>
+    </div>
+    <p class="hint" id="users-count"></p>
+    <div class="pricing-table-wrap" style="margin-bottom:40px;">
+      <table class="admin-table" id="users-table">
+        <thead>
+          <tr><th>Email</th><th>Plan</th><th>Interviews used</th><th>Joined</th></tr>
+        </thead>
+        <tbody id="users-body"></tbody>
+      </table>
+    </div>
+
+    <h1>Interview history</h1>
+    <div class="pricing-table-wrap">
+      <table class="admin-table" id="history-table">
+        <thead>
+          <tr><th>Email</th><th>Case</th><th>Score</th><th>Date</th></tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+
+    <p class="auth-error" id="dashboard-error" style="display:none;"></p>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  const gate = document.getElementById("gate");
+  const dashboard = document.getElementById("dashboard");
+  const navActions = document.getElementById("nav-actions");
+  const gateForm = document.getElementById("gate-form");
+  const gateError = document.getElementById("gate-error");
+  const dashboardError = document.getElementById("dashboard-error");
+  const usersBody = document.getElementById("users-body");
+  const historyBody = document.getElementById("history-body");
+  const usersCount = document.getElementById("users-count");
+
+  const STORAGE_KEY = "loudcase_admin_secret";
+
+  function fmtDate(unixSeconds) {
+    if (!unixSeconds) return "—";
+    return new Date(unixSeconds * 1000).toLocaleDateString(undefined, {
+      year: "numeric", month: "short", day: "numeric",
+    });
+  }
+
+  async function callAdmin(path, secret) {
+    const res = await fetch(`${CONFIG.backendUrl}${path}`, {
+      headers: { "X-Admin-Secret": secret },
+    });
+    if (res.status === 401) throw new Error("Invalid admin secret.");
+    if (res.status === 503) throw new Error("Admin access is not configured on the server.");
+    if (!res.ok) throw new Error(`Request failed (${res.status}).`);
+    return res.json();
+  }
+
+  function renderUsers(users) {
+    usersCount.textContent = `${users.length} registered user${users.length === 1 ? "" : "s"}`;
+    usersBody.innerHTML = users.length
+      ? users.map((u) => `
+          <tr>
+            <td style="text-align:left;">${u.email}</td>
+            <td>${u.is_premium ? "Premium" : "Free"}</td>
+            <td>${u.interviews_used}</td>
+            <td>${fmtDate(u.created_at)}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No users yet.</td></tr>`;
+  }
+
+  function renderHistory(entries) {
+    historyBody.innerHTML = entries.length
+      ? entries.map((h) => `
+          <tr>
+            <td style="text-align:left;">${h.email}</td>
+            <td style="text-align:left;">${h.case_id}</td>
+            <td>${h.score_summary || "—"}</td>
+            <td>${fmtDate(h.created_at)}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No completed interviews yet.</td></tr>`;
+  }
+
+  async function loadDashboard(secret) {
+    dashboardError.style.display = "none";
+    try {
+      const [usersData, historyData] = await Promise.all([
+        callAdmin("/admin/users", secret),
+        callAdmin("/admin/interview-history", secret),
+      ]);
+      renderUsers(usersData.users);
+      renderHistory(historyData.interviews);
+      gate.style.display = "none";
+      dashboard.style.display = "block";
+      navActions.style.display = "block";
+    } catch (err) {
+      // A secret that worked before but fails now (rotated, typo'd on
+      // save, etc.) -- drop it and fall back to the gate instead of
+      // silently showing a broken/empty dashboard.
+      sessionStorage.removeItem(STORAGE_KEY);
+      gate.style.display = "block";
+      dashboard.style.display = "none";
+      navActions.style.display = "none";
+      gateError.textContent = err.message;
+      gateError.style.display = "block";
+    }
+  }
+
+  gateForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const secret = document.getElementById("secret").value.trim();
+    gateError.style.display = "none";
+    sessionStorage.setItem(STORAGE_KEY, secret);
+    loadDashboard(secret);
+  });
+
+  document.getElementById("refresh-btn").addEventListener("click", () => {
+    const secret = sessionStorage.getItem(STORAGE_KEY);
+    if (secret) loadDashboard(secret);
+  });
+
+  document.getElementById("admin-logout").addEventListener("click", (e) => {
+    e.preventDefault();
+    sessionStorage.removeItem(STORAGE_KEY);
+    window.location.reload();
+  });
+
+  const savedSecret = sessionStorage.getItem(STORAGE_KEY);
+  if (savedSecret) loadDashboard(savedSecret);
+</script>
+</body>
+</html>

@@ -984,3 +984,38 @@ pre.scorecard {
   color: var(--text-muted);
   font-size: 14px;
 }
+
+/* ---- Admin dashboard table ----
+   Reuses .pricing-table-wrap for the outer card, but plainer row styling
+   (no premium-column highlighting) since this is just a data table. */
+
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 560px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 14px 20px;
+  text-align: center;
+  font-size: 14px;
+  border-bottom: 1px dotted var(--border);
+}
+
+.admin-table thead th {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
