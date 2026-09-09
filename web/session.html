@@ -81,8 +81,8 @@
 </div>
 
 <!-- Scoring runs automatically once the widget's own "End call" button
-     ends the conversation (see the conversationEnded listener below) --
-     there's no manual "Get my scorecard" button anymore. Result shows
+     ends the conversation (see the "elevenlabs-convai:call" listener below)
+     -- there's no manual "Get my scorecard" button anymore. Result shows
      here instead of inline at the bottom of the page. -->
 <div class="modal-overlay" id="scorecard-modal" style="display:none;">
   <div class="modal-card">
@@ -216,10 +216,23 @@
       }
     }
 
-    // Fires when the user ends the call via the widget's own "End call"
-    // button (or the call otherwise disconnects) -- scoring then runs
-    // automatically instead of requiring a separate button click.
-    widget.addEventListener("conversationEnded", runScoring);
+    // The widget does NOT dispatch a "conversationEnded" DOM event -- that
+    // doesn't exist in @elevenlabs/convai-widget-embed. The only public
+    // hook it exposes is "elevenlabs-convai:call", fired right before each
+    // call starts, whose detail.config is passed straight through to the
+    // underlying SDK's startSession() (onConnect/onDisconnect/onStatusChange
+    // callbacks and all). Wrapping onDisconnect here is how you find out the
+    // user ended the call via the widget's own "End call" button (or the
+    // call otherwise dropped) -- scoring then runs automatically instead of
+    // requiring a separate button click.
+    widget.addEventListener("elevenlabs-convai:call", (event) => {
+      const config = event.detail.config;
+      const originalOnDisconnect = config.onDisconnect;
+      config.onDisconnect = (...args) => {
+        originalOnDisconnect?.(...args);
+        runScoring();
+      };
+    });
   }
 </script>
 </body>
