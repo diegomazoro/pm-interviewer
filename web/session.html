@@ -101,56 +101,6 @@
   </div>
 </div>
 
-<script>
-  // Auto-scoring trigger, part 1: the ElevenLabs widget dispatches no
-  // supported "call ended" DOM event (its only public event,
-  // "elevenlabs-convai:call", fires before the call even starts, and the
-  // widget's own internal startSession() call unconditionally overwrites
-  // onDisconnect/onStatusChange afterwards -- confirmed by reading the
-  // actual shipped bundle). Scraping the widget's rendered text for an
-  // "ended the conversation" message (tried previously) is just as
-  // undocumented and already proved unreliable in testing.
-  //
-  // Instead, hook the browser's own WebRTC/WebSocket APIs -- whichever
-  // transport the call actually runs over HAS to close when the call ends,
-  // regardless of how the widget renders anything or what internal
-  // callbacks it wires up. This must run before the widget's own script
-  // (loaded further down) so it captures RTCPeerConnection/WebSocket before
-  // the widget's module captures its own reference to them -- placing this
-  // block textually before that <script src> tag guarantees it executes
-  // first, since the widget script is `async` and only starts running once
-  // its network fetch completes, well after this inline block has run.
-  window.__loudcaseCallEndedListeners = [];
-  function loudcaseNotifyCallEnded() {
-    window.__loudcaseCallEndedListeners.forEach((fn) => fn());
-  }
-
-  const NativeRTCPeerConnection = window.RTCPeerConnection;
-  if (NativeRTCPeerConnection) {
-    window.RTCPeerConnection = function (...args) {
-      const pc = new NativeRTCPeerConnection(...args);
-      pc.addEventListener("connectionstatechange", () => {
-        if (pc.connectionState === "closed" || pc.connectionState === "failed") {
-          loudcaseNotifyCallEnded();
-        }
-      });
-      return pc;
-    };
-    window.RTCPeerConnection.prototype = NativeRTCPeerConnection.prototype;
-  }
-
-  const NativeWebSocket = window.WebSocket;
-  if (NativeWebSocket) {
-    window.WebSocket = function (url, ...rest) {
-      const ws = new NativeWebSocket(url, ...rest);
-      if (typeof url === "string" && /elevenlabs|livekit/i.test(url)) {
-        ws.addEventListener("close", loudcaseNotifyCallEnded);
-      }
-      return ws;
-    };
-    window.WebSocket.prototype = NativeWebSocket.prototype;
-  }
-</script>
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async></script>
@@ -358,29 +308,24 @@
       }
     }
 
-    // Manual fallback -- always works, regardless of widget/transport
-    // internals, independent of the auto-trigger guard below.
+    // Manual fallback -- always works, regardless of widget internals.
     document.getElementById("evaluate-btn").addEventListener("click", runScoring);
 
-    // Auto-scoring trigger, part 2: react to the RTCPeerConnection/WebSocket
-    // close signal captured by the patch at the top of the page. Guarded so
-    // only the first signal (of possibly several -- e.g. both the publish
-    // and subscribe peer connections closing) fires scoring.
+    // Best-effort auto-trigger: the widget's shadow root is mode:"open",
+    // and it renders a real message into its own transcript when a call
+    // ends ("You ended the conversation" / "The agent ended the
+    // conversation" -- default English strings baked into the widget
+    // bundle). This is undocumented and could break on a future widget
+    // version, which is exactly why the manual button above still exists.
+    //
+    // A previous version of this also patched window.RTCPeerConnection /
+    // window.WebSocket globally to detect the call's transport closing --
+    // removed after it broke the widget's own real-time audio handling
+    // (the replacement WebSocket was missing static properties like
+    // WebSocket.OPEN that the widget's internal code relied on). Patching
+    // global networking primitives a live voice widget depends on is too
+    // invasive; this shadow-DOM read-only observation is much lower risk.
     let autoTriggered = false;
-    window.__loudcaseCallEndedListeners.push(() => {
-      if (autoTriggered) return;
-      autoTriggered = true;
-      runScoring();
-    });
-
-    // Secondary, best-effort layer on top of the transport hook above: the
-    // widget's shadow root is mode:"open", and it renders a real message
-    // into its own transcript when a call ends ("You ended the
-    // conversation" / "The agent ended the conversation" -- default English
-    // strings baked into the widget bundle). This is undocumented and could
-    // break on a future widget version, which is exactly why it's a backup
-    // to the transport hook rather than the only mechanism, and why the
-    // manual button above still exists on top of both.
     function watchForCallEnd() {
       const shadowRoot = widget.shadowRoot;
       if (!shadowRoot) {
