@@ -273,7 +273,7 @@
         }
         window.location.href = data.url;
       } catch (err) {
-        errorEl.textContent = `Request failed: ${err}`;
+        errorEl.textContent = "Something went wrong. Refresh the page and try again, or email diegomazorosete@gmail.com.";
         errorEl.style.display = "block";
         if (btn) btn.disabled = false;
       }
@@ -284,6 +284,21 @@
       p.className = "hint";
       p.textContent = message;
       modalBody.appendChild(p);
+    }
+    function showGenericError() {
+      // For failures with no useful detail to show (a network-level
+      // fetch() rejection like "TypeError: Failed to fetch" carries no
+      // information a candidate can act on) -- point them at a retry and a
+      // way to reach us instead of surfacing the raw JS error message.
+      modalBody.innerHTML = `<h2>Something went wrong</h2>`;
+      const p = document.createElement("p");
+      p.className = "hint";
+      p.textContent = "Refresh the page and try again.";
+      modalBody.appendChild(p);
+      modalBody.insertAdjacentHTML(
+        "beforeend",
+        `<p class="hint"><a href="mailto:diegomazorosete@gmail.com?subject=Loudcase%20feedback">Send feedback to our team</a></p>`
+      );
     }
     function showAuthError(detail) {
       // Deliberately NOT calling logout() here -- that clears the token and
@@ -322,13 +337,24 @@
           showUpsell(data.detail);
           return;
         }
+        if (res.status === 404) {
+          // The backend only saves a transcript once the candidate's first
+          // reply reaches our custom LLM (the interviewer's opening line is
+          // spoken directly by ElevenLabs' own TTS and never touches our
+          // server) -- so ending the call without ever answering means no
+          // session file exists yet. That's an expected outcome, not a
+          // broken request, so say so plainly instead of surfacing the
+          // raw "No saved session at ..." backend detail.
+          showError("You ended the interview before responding to the case, so there's nothing to score yet. Try again and share your approach before ending the call.");
+          return;
+        }
         if (res.ok) {
           showScorecard(data.scorecard);
         } else {
           showError(`Error: ${data.detail || res.status}`);
         }
       } catch (err) {
-        showError(`Request failed: ${err}`);
+        showGenericError();
       }
     }
 
