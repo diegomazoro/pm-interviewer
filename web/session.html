@@ -237,8 +237,46 @@
       modalBody.appendChild(p);
       modalBody.insertAdjacentHTML(
         "beforeend",
-        `<a class="btn" href="index.html#pricing" style="display:inline-block; margin-top:12px;"><span class="btn-shine">See Premium</span></a>`
+        `<button type="button" class="btn" id="modal-get-premium-btn" style="display:inline-block; margin-top:12px;"><span class="btn-shine">Get Premium</span></button>
+         <p class="hint" id="modal-premium-error" style="display:none;"></p>`
       );
+      document.getElementById("modal-get-premium-btn").addEventListener("click", startCheckout);
+    }
+
+    // Same checkout flow as the "Get Premium" button on index.html --
+    // creates a real Stripe Checkout session server-side and redirects
+    // there, rather than just linking to the marketing pricing section.
+    async function startCheckout() {
+      const btn = document.getElementById("modal-get-premium-btn");
+      const errorEl = document.getElementById("modal-premium-error");
+      errorEl.style.display = "none";
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch(`${CONFIG.backendUrl}/billing/create-checkout-session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeader() },
+          body: JSON.stringify({
+            success_url: window.location.origin + window.location.pathname.replace(/session\.html$/, "") + "premium-success.html",
+            cancel_url: window.location.href,
+          }),
+        });
+        if (res.status === 401) {
+          showAuthError((await res.json().catch(() => ({}))).detail);
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) {
+          errorEl.textContent = data.detail || "Something went wrong starting checkout.";
+          errorEl.style.display = "block";
+          if (btn) btn.disabled = false;
+          return;
+        }
+        window.location.href = data.url;
+      } catch (err) {
+        errorEl.textContent = `Request failed: ${err}`;
+        errorEl.style.display = "block";
+        if (btn) btn.disabled = false;
+      }
     }
     function showError(message) {
       modalBody.innerHTML = `<h2>Something went wrong</h2>`;
