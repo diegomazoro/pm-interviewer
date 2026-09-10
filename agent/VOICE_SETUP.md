@@ -147,18 +147,34 @@ double check that.
 ## 5. After the call: scoring
 
 `server.py` already writes a transcript to `sessions/<case_id>_<session>.json`
-on every turn, so once a call ends you have a complete record. To surface a
-score:
+on every turn, so once a call ends you have a complete record. `web/session.html`
+has a "Get my scorecard" button that always works (calls `/evaluate` with
+`{"case_id": ..., "session_id": ...}`, using the session id it generates
+client-side before the call even starts — see the comment above
+`generatedSessionId` in that file for why).
 
-- Simplest: a "get my results" button on your practice page that calls your
-  own backend's `/evaluate` endpoint with `{"case_id": ..., "session_id": ...}`
-  (you'll need the widget to expose or you to capture ElevenLabs'
-  conversation ID to use as `session_id` — check their widget/SDK events for
-  a call-start or call-end callback that provides this).
-- More automated: ElevenLabs supports post-call webhooks that fire when a
-  conversation ends and can include the full transcript — wiring that to
-  call your `/evaluate` endpoint automatically is a reasonable next step
-  once the basic flow is working, but isn't built yet.
+**Auto-popup, via ElevenLabs' post-call webhook:** the scorecard also pops up
+automatically once the call ends, without the candidate clicking anything.
+This relies on ElevenLabs' post-call webhook (`post_call_transcription`)
+hitting `server.py`'s `/webhooks/elevenlabs` endpoint, which marks the
+session ended; the frontend just polls `/session-status` every few seconds
+and shows the scorecard the moment it sees that. (Earlier attempts tried to
+detect "call ended" purely from inside the browser by watching the widget
+itself — none of them held up: the widget has no supported "call ended" DOM
+event, and scraping its internals either didn't fire reliably or broke real
+call functionality. The webhook is the only mechanism ElevenLabs actually
+guarantees.) To turn this on:
+
+1. In the ElevenLabs dashboard: **Settings → Webhooks** → create a webhook
+   for the **Post-call transcription** event, pointing at
+   `https://<your-deployed-backend>/webhooks/elevenlabs`.
+2. Copy the signing secret it shows you.
+3. Set `ELEVENLABS_WEBHOOK_SECRET` on your host (Railway/Render/etc.) to
+   that secret, and redeploy.
+
+Until that's configured, `/webhooks/elevenlabs` just returns 503 (fails
+closed, same pattern as `ADMIN_SECRET`) and the manual button keeps working
+exactly as before — nothing breaks, the auto-popup just doesn't fire yet.
 
 ## What's built vs. what you still need to configure
 

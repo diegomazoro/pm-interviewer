@@ -308,46 +308,52 @@
       }
     }
 
-    // Manual fallback -- always works, regardless of widget internals.
-    document.getElementById("evaluate-btn").addEventListener("click", runScoring);
-
-    // Best-effort auto-trigger: the widget's shadow root is mode:"open",
-    // and it renders a real message into its own transcript when a call
-    // ends ("You ended the conversation" / "The agent ended the
-    // conversation" -- default English strings baked into the widget
-    // bundle). This is undocumented and could break on a future widget
-    // version, which is exactly why the manual button above still exists.
-    //
-    // A previous version of this also patched window.RTCPeerConnection /
-    // window.WebSocket globally to detect the call's transport closing --
-    // removed after it broke the widget's own real-time audio handling
-    // (the replacement WebSocket was missing static properties like
-    // WebSocket.OPEN that the widget's internal code relied on). Patching
-    // global networking primitives a live voice widget depends on is too
-    // invasive; this shadow-DOM read-only observation is much lower risk.
+    // Manual fallback -- always works, regardless of the auto-trigger below.
     let autoTriggered = false;
-    function watchForCallEnd() {
-      const shadowRoot = widget.shadowRoot;
-      if (!shadowRoot) {
-        setTimeout(watchForCallEnd, 200);
-        return;
-      }
-      const observer = new MutationObserver((mutations) => {
-        if (autoTriggered) return;
-        for (const mutation of mutations) {
-          for (const node of mutation.addedNodes) {
-            const text = node.textContent || "";
-            if (/ended the conversation/i.test(text)) {
-              autoTriggered = true;
-              runScoring();
-              return;
-            }
+    document.getElementById("evaluate-btn").addEventListener("click", () => {
+      autoTriggered = true; // stop the poll loop from also firing afterwards
+      runScoring();
+    });
+
+    // Auto-trigger: poll the backend for ElevenLabs' own post-call webhook
+    // having marked this session ended (see agent/server.py's
+    // /webhooks/elevenlabs + /session-status). Every previous attempt at
+    // detecting "call ended" from inside the browser turned out to be
+    // either wrong or actively harmful: there's no "conversationEnded" DOM
+    // event on this widget (confirmed by reading the shipped bundle),
+    // patching window.RTCPeerConnection/WebSocket to watch the transport
+    // broke the widget's own real-time audio handling, and scraping its
+    // rendered text for an "ended the conversation" message can't be
+    // trusted either -- this Agent has custom widget text configured in
+    // the ElevenLabs dashboard (its button reads "Start interview", not
+    // the widget's default "Start a call"), so there's no guarantee the
+    // disconnect string matches what we'd hardcode here.
+    //
+    // The webhook is authoritative and server-to-server, so this just asks
+    // "is it done yet?" every few seconds instead of watching the widget at
+    // all. If the webhook isn't configured yet (or delivery is delayed),
+    // this simply never sees `ended: true` and the manual button above
+    // keeps working exactly as it already does.
+    async function pollSessionStatus() {
+      if (autoTriggered) return;
+      try {
+        const res = await fetch(
+          `${CONFIG.backendUrl}/session-status?case_id=${encodeURIComponent(caseId)}&session_id=${encodeURIComponent(generatedSessionId)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ended) {
+            autoTriggered = true;
+            runScoring();
+            return;
           }
         }
-      });
-      observer.observe(shadowRoot, { childList: true, subtree: true });
+      } catch (err) {
+        // Network hiccup on a background poll -- just try again next tick.
+      }
+      setTimeout(pollSessionStatus, 3000);
     }
-    watchForCallEnd();
+    pollSessionStatus();
   }
 </script>
 </body>

@@ -541,6 +541,113 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
     return {"case_id": req.case_id, "scorecard": scorecard, "is_premium": status["is_premium"]}
 
 
+# ---- ElevenLabs webhook (call-ended signal) ----
+#
+# The frontend needs to know the moment a call actually ends, to auto-show
+# the scorecard. Every attempt at detecting that from inside the browser by
+# watching the <elevenlabs-convai> widget failed for structural reasons: it
+# dispatches no "call ended" DOM event (its only public event fires before
+# the call even starts), patching window.RTCPeerConnection/WebSocket to
+# watch the transport actually broke the widget's own real-time audio
+# handling, and scraping its rendered text for an "ended the conversation"
+# message can't be trusted either -- this Agent has custom widget text
+# configured in the ElevenLabs dashboard (confirmed by inspecting the live
+# shadow DOM: the button reads "Start interview", not the widget's default
+# "Start a call"), so the disconnect string it renders isn't guaranteed to
+# match what we'd hardcode here either.
+#
+# ElevenLabs' post-call webhook is the one thing that's actually reliable:
+# it fires server-to-server once a call is fully done and carries the full,
+# authoritative transcript directly -- no guessing required. This handler
+# verifies it, then writes/overwrites the session file (keyed by the same
+# case_id + session_id already threaded through as dynamic variables) with
+# that transcript plus a call_ended flag. The frontend just polls
+# GET /session-status for that flag instead of watching the widget at all.
+# Requires ELEVENLABS_WEBHOOK_SECRET to be set (see agent/VOICE_SETUP.md for
+# how to configure the webhook itself in the ElevenLabs dashboard) -- until
+# it is, this endpoint is unreachable and the existing manual "Get my
+# scorecard" button keeps working exactly as before.
+
+def verify_elevenlabs_webhook(raw_body: bytes, sig_header: Optional[str]) -> dict:
+    """Verifies the `ElevenLabs-Signature: t=<unix_ts>,v0=<hex_hmac>[,v0=...]`
+    header -- HMAC-SHA256 over "<timestamp>.<raw_body>", hex-encoded, timing
+    -safe compared against every v0 value present (ElevenLabs' own docs
+    describe the header name but not the algorithm; this matches their
+    documented Node/Python reference implementations). Raises HTTPException
+    on any failure -- callers must not trust the payload otherwise, since
+    anyone can POST arbitrary JSON at a public webhook URL."""
+    webhook_secret = os.environ.get("ELEVENLABS_WEBHOOK_SECRET")
+    if not webhook_secret:
+        raise HTTPException(status_code=503, detail="ELEVENLABS_WEBHOOK_SECRET is not set on the server.")
+    if not sig_header:
+        raise HTTPException(status_code=400, detail="Missing ElevenLabs-Signature header.")
+
+    elements = sig_header.split(",")
+    timestamp = next((e[2:] for e in elements if e.startswith("t=")), None)
+    signatures = [e[3:] for e in elements if e.startswith("v0=")]
+    if not timestamp or not signatures:
+        raise HTTPException(status_code=400, detail="Malformed ElevenLabs-Signature header.")
+    if abs(int(time.time()) - int(timestamp)) > 1800:
+        raise HTTPException(status_code=400, detail="Webhook timestamp too old.")
+
+    signed_payload = f"{timestamp}.{raw_body.decode('utf-8')}"
+    expected = hmac.new(webhook_secret.encode(), signed_payload.encode(), hashlib.sha256).hexdigest()
+    if not any(hmac.compare_digest(sig, expected) for sig in signatures):
+        raise HTTPException(status_code=400, detail="Invalid webhook signature.")
+
+    return json.loads(raw_body)
+
+
+@app.post("/webhooks/elevenlabs")
+async def elevenlabs_webhook(request: Request, elevenlabs_signature: Optional[str] = Header(None)):
+    raw_body = await request.body()
+    event = verify_elevenlabs_webhook(raw_body, elevenlabs_signature)
+
+    if event.get("type") != "post_call_transcription":
+        return {"received": True}
+
+    data = event.get("data") or {}
+    dynamic_vars = (data.get("conversation_initiation_client_data") or {}).get("dynamic_variables") or {}
+    case_id = dynamic_vars.get("case_id")
+    session_id = dynamic_vars.get("session_id")
+    if not case_id or not session_id:
+        logger.error(
+            "elevenlabs webhook: post_call_transcription with no case_id/session_id in dynamic_variables: %r",
+            dynamic_vars,
+        )
+        return {"received": True}
+
+    transcript = []
+    for turn in data.get("transcript") or []:
+        message = turn.get("message")
+        if not message:
+            continue  # tool calls and other non-speech events carry no message
+        role = "interviewer" if turn.get("role") == "agent" else "candidate"
+        transcript.append({"role": role, "text": message})
+
+    session_path = SESSIONS_DIR / f"{case_id}_{session_id}.json"
+    session_path.write_text(json.dumps({"case_id": case_id, "transcript": transcript, "call_ended": True}, indent=2))
+    logger.info("elevenlabs webhook: marked %s ended (%d transcript turns)", session_path.name, len(transcript))
+
+    return {"received": True}
+
+
+@app.get("/session-status")
+def session_status(case_id: str = Query(...), session_id: str = Query(...)):
+    """Polled by the frontend to auto-show the scorecard once the webhook
+    above marks the call ended. No auth -- session_id is an unguessable
+    random token generated client-side before the call even starts, and
+    this reveals nothing beyond a boolean."""
+    session_path = SESSIONS_DIR / f"{case_id}_{session_id}.json"
+    if not session_path.exists():
+        return {"ended": False}
+    try:
+        data = json.loads(session_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {"ended": False}
+    return {"ended": bool(data.get("call_ended"))}
+
+
 # ---- Billing (Stripe) ----
 
 class CreateCheckoutRequest(BaseModel):
