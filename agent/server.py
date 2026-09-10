@@ -459,15 +459,19 @@ class EvaluateRequest(BaseModel):
 @app.post("/evaluate")
 def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
     # Free-plan usage gate. Checked BEFORE the (paid, per-call) Claude
-    # request below so a free user who's used up their 5 doesn't cost us
-    # an evaluator call just to get turned away. Premium is unlimited.
+    # request below so a free user who's used up their free interviews
+    # doesn't cost us an evaluator call just to get turned away. Premium is
+    # unlimited. Free users get full detailed feedback (same as Premium) on
+    # each of their FREE_INTERVIEW_LIMIT interviews -- there's no separate
+    # "score only" tier anymore, it's full feedback up to the limit, then a
+    # hard block.
     status = auth.get_billing_status(user["id"])
     if not status["is_premium"] and status["interviews_used"] >= auth.FREE_INTERVIEW_LIMIT:
         raise HTTPException(
             status_code=402,
-            detail=f"You've used all {auth.FREE_INTERVIEW_LIMIT} free scored interviews on the "
-                    "Free plan. Upgrade to Premium for unlimited interviews, detailed feedback, "
-                    "and your full score history.",
+            detail=f"Advanced feedback is a Premium feature. You had "
+                    f"{auth.FREE_INTERVIEW_LIMIT} free scored interview(s). Upgrade for "
+                    "unlimited interviews and detailed feedback.",
         )
 
     case = load_case(str(case_path_for(req.case_id)))
@@ -531,18 +535,10 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
         scorecard=scorecard,
     )
 
-    if status["is_premium"]:
-        return {"case_id": req.case_id, "scorecard": scorecard, "is_premium": True}
-
-    # Free plan: score only, no detailed rubric breakdown.
-    preview = score_summary or "Your score is being calculated."
-    remaining = auth.FREE_INTERVIEW_LIMIT - status["interviews_used"] - 1
-    upsell = (
-        f"\n\n---\nDetailed feedback is a Premium feature. "
-        f"You have {max(remaining, 0)} free scored interview(s) left. "
-        f"Upgrade for unlimited interviews, detailed feedback, and full history."
-    )
-    return {"case_id": req.case_id, "scorecard": preview + upsell, "is_premium": False}
+    # Free users get the same full scorecard as Premium for each of their
+    # FREE_INTERVIEW_LIMIT interviews -- the gate above is what enforces the
+    # limit, not a truncated response here.
+    return {"case_id": req.case_id, "scorecard": scorecard, "is_premium": status["is_premium"]}
 
 
 # ---- Billing (Stripe) ----

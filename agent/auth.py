@@ -45,7 +45,7 @@ JWT_TTL_SECONDS = 60 * 60 * 24 * 30  # 30 days -- this is a practice tool, not a
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-FREE_INTERVIEW_LIMIT = 5
+FREE_INTERVIEW_LIMIT = 2
 
 
 def init_db() -> None:
