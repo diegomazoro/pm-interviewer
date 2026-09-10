@@ -798,6 +798,11 @@ nav a {
   z-index: 10;
 }
 
+.results-actions {
+  text-align: center;
+  margin-top: 24px;
+}
+
 .hint {
   font-size: 13px;
   color: var(--text-muted);
