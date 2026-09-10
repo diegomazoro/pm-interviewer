@@ -460,10 +460,28 @@ SCORE_LINE_RE = re.compile(r"TOTAL:?\s*\d+\s*/\s*\d+", re.IGNORECASE)
 
 
 def extract_score_summary(scorecard: str) -> Optional[str]:
-    """Pulls just the 'TOTAL: X/Y' line out of a full scorecard -- this is
-    what free-plan users see instead of the full rubric breakdown."""
+    """Pulls just the 'TOTAL: X/Y' line out of a full scorecard -- stored
+    alongside the full scorecard in interview_history for a quick-glance
+    column, not shown to candidates on its own anywhere."""
     match = SCORE_LINE_RE.search(scorecard)
     return match.group(0) if match else None
+
+
+INTEGRITY_LINE_RE = re.compile(r"^INTEGRITY:", re.MULTILINE)
+
+
+def strip_admin_only_sections(scorecard: str) -> str:
+    """The evaluator prompt (prompts/evaluator_prompt.md) asks for an
+    INTEGRITY check (did the interviewer leak hints) and a closing
+    narrative paragraph after it -- both are for internal review, not
+    something a candidate should see in their own scorecard. Truncates at
+    the INTEGRITY line; callers should still store the untouched `scorecard`
+    (this function's input) in interview_history so that signal isn't lost
+    for admin use, just not returned to the candidate."""
+    match = INTEGRITY_LINE_RE.search(scorecard)
+    if not match:
+        return scorecard
+    return scorecard[: match.start()].rstrip()
 
 
 class EvaluateRequest(BaseModel):
@@ -553,8 +571,15 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
 
     # Free users get the same full scorecard as Premium for each of their
     # FREE_INTERVIEW_LIMIT interviews -- the gate above is what enforces the
-    # limit, not a truncated response here.
-    return {"case_id": req.case_id, "scorecard": scorecard, "is_premium": status["is_premium"]}
+    # limit, not a truncated response here. The INTEGRITY check + closing
+    # narrative are still stored above (record_interview got the untouched
+    # `scorecard`) for admin review; strip_admin_only_sections keeps them
+    # out of what the candidate actually sees.
+    return {
+        "case_id": req.case_id,
+        "scorecard": strip_admin_only_sections(scorecard),
+        "is_premium": status["is_premium"],
+    }
 
 
 # ---- ElevenLabs webhook (call-ended signal) ----
