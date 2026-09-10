@@ -205,9 +205,11 @@ def set_premium(user_id: int) -> None:
 
 def set_premium_by_email(email: str) -> None:
     conn = _get_conn()
-    conn.execute("UPDATE users SET is_premium = 1 WHERE email = ?", (_normalize_email(email),))
+    cursor = conn.execute("UPDATE users SET is_premium = 1 WHERE email = ?", (_normalize_email(email),))
     conn.commit()
     conn.close()
+    if cursor.rowcount == 0:
+        raise AuthError(f"No account found for {email}.")
 
 
 def record_interview(user_id: int, case_id: str, session_id: str, score_summary: str, scorecard: str) -> None:

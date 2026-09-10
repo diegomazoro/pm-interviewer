@@ -57,7 +57,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger("uvicorn.error")
@@ -91,6 +91,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(auth.AuthError)
+async def handle_auth_error(request: Request, exc: auth.AuthError):
+    # require_user only validates the JWT itself (signature/expiry) -- it
+    # doesn't confirm the account still exists in the database. Several
+    # routes (e.g. /evaluate, /history) then look the user up by id and hit
+    # auth.AuthError("User not found.") if it doesn't, e.g. after the
+    # database was reset out from under a still-valid token. Without this
+    # handler that's an unhandled exception -> raw 500 crash with a stack
+    # trace instead of a real response. A global handler catches it
+    # anywhere it's raised (current call sites and future ones) and turns
+    # it into a clean 401 -- which the frontend already treats as "your
+    # session is invalid, here's a re-login prompt" rather than silently
+    # wiping the session (see showAuthError in web/session.html).
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
 
 
 def require_user(authorization: Optional[str] = Header(None)) -> dict:
@@ -728,6 +744,23 @@ def admin_interview_history(_: None = Depends(require_admin)):
     ).fetchall()
     conn.close()
     return {"history": [dict(r) for r in rows]}
+
+
+class AdminSetPremiumRequest(BaseModel):
+    email: str
+
+
+@app.post("/admin/set-premium")
+def admin_set_premium(req: AdminSetPremiumRequest, _: None = Depends(require_admin)):
+    """Manual recovery tool: if users.db ever gets reset out from under a
+    paying customer (e.g. a redeploy on a host with no persistent volume for
+    DATA_DIR wiping the database), this re-grants Premium by email without
+    needing a fresh Stripe charge."""
+    try:
+        auth.set_premium_by_email(req.email)
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"email": req.email, "is_premium": True}
 
 
 @app.get("/health")
