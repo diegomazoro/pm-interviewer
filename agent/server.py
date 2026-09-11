@@ -574,8 +574,8 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
             detail={
                 "score_summary": score_summary or "Your score is being calculated.",
                 "message": (
-                    f"You had {auth.FREE_INTERVIEW_LIMIT} free scored interview(s). Upgrade to "
-                    "Premium for unlimited interviews with detailed feedback."
+                    "You used all your free interviews. Upgrade to Premium for unlimited "
+                    "interviews with detailed feedback."
                 ),
             },
         )

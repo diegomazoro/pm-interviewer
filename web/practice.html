@@ -104,7 +104,7 @@
     <form class="feedback-form" id="product-feedback-form">
       <textarea id="product-feedback-text" placeholder="Type your feedback here..." required></textarea>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:16px;">
-        <span class="hint" id="product-feedback-status">We don't respond to submissions, but we read all of them carefully.</span>
+        <span class="hint" id="product-feedback-status">We read all the submissions carefully and we will try to get back to you asap :)</span>
         <button type="submit" class="btn" id="product-feedback-submit"><span class="btn-shine">Submit</span></button>
       </div>
     </form>
@@ -118,7 +118,7 @@
   const textarea = document.getElementById("product-feedback-text");
   const submitBtn = document.getElementById("product-feedback-submit");
   const status = document.getElementById("product-feedback-status");
-  const FEEDBACK_DEFAULT_STATUS = "We don't respond to submissions, but we read all of them carefully.";
+  const FEEDBACK_DEFAULT_STATUS = "We read all the submissions carefully and we will try to get back to you asap :)";
 
   function openFeedbackModal() {
     status.textContent = FEEDBACK_DEFAULT_STATUS;
