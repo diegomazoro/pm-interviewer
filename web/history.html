@@ -40,15 +40,7 @@
 
 <div class="wrap">
   <h1>Your history</h1>
-  <p style="color: var(--text-muted)">Every scored interview you've run, with the full feedback from each session.</p>
-
-  <div id="upsell" style="display:none;" class="auth-card">
-    <h1 style="font-size:20px;">History is a Premium feature</h1>
-    <p class="auth-subtitle">Upgrade to keep every score and piece of feedback you've ever received, all in one place.</p>
-    <a class="btn" href="index.html#pricing" style="width:100%; text-align:center; box-sizing:border-box;">
-      <span class="btn-shine">See plans</span>
-    </a>
-  </div>
+  <p style="color: var(--text-muted)">Every scored interview you've run. Your first two come with full feedback -- after that, upgrade to Premium to unlock detailed feedback on the rest.</p>
 
   <div id="history-list" style="margin-top:24px; display:flex; flex-direction:column; gap:16px;"></div>
   <p id="empty-msg" style="display:none; color: var(--text-muted);">No scored interviews yet -- head to a case and finish one to see it here.</p>
@@ -67,15 +59,40 @@
     return c ? c.title : caseId;
   }
 
-  (async () => {
+  async function startCheckout(btn) {
+    if (btn) btn.disabled = true;
     try {
-      const res = await fetch(`${CONFIG.backendUrl}/history`, { headers: authHeader() });
+      const res = await fetch(`${CONFIG.backendUrl}/billing/create-checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({
+          success_url: window.location.origin + window.location.pathname.replace(/history\.html$/, "") + "premium-success.html",
+          cancel_url: window.location.href,
+        }),
+      });
       if (res.status === 401) {
         logout();
         return;
       }
-      if (res.status === 403) {
-        document.getElementById("upsell").style.display = "block";
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.detail || "Something went wrong starting checkout.");
+        if (btn) btn.disabled = false;
+        return;
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      alert("Something went wrong. Refresh the page and try again, or email diegomazorosete@gmail.com.");
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  (async () => {
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/history`, { headers: authHeader() });
+      if (res.status === 401) {
+        document.getElementById("history-list").textContent =
+          "Your session looks invalid. Please log in again to see your history.";
         return;
       }
       const data = await res.json();
@@ -90,14 +107,45 @@
         });
         const entry = document.createElement("div");
         entry.className = "case-card";
-        entry.innerHTML = `
-          <div class="case-card-head">
-            <span class="badge">${caseTitle(item.case_id)}</span>
-          </div>
-          <h3>${item.score_summary || "Score unavailable"}</h3>
-          <p style="color: var(--text-muted); font-size:13px;">${date}</p>
-          <pre class="scorecard" style="margin:0;">${item.scorecard}</pre>
-        `;
+
+        const head = document.createElement("div");
+        head.className = "case-card-head";
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = caseTitle(item.case_id);
+        head.appendChild(badge);
+        entry.appendChild(head);
+
+        const h3 = document.createElement("h3");
+        h3.textContent = item.score_summary || "Score unavailable";
+        entry.appendChild(h3);
+
+        const dateEl = document.createElement("p");
+        dateEl.style.cssText = "color: var(--text-muted); font-size:13px;";
+        dateEl.textContent = date;
+        entry.appendChild(dateEl);
+
+        if (item.full_feedback) {
+          const pre = document.createElement("pre");
+          pre.className = "scorecard";
+          pre.style.margin = "0";
+          pre.textContent = item.scorecard;
+          entry.appendChild(pre);
+        } else {
+          const lockedMsg = document.createElement("p");
+          lockedMsg.className = "hint";
+          lockedMsg.textContent = "Detailed feedback for this interview is a Premium feature.";
+          entry.appendChild(lockedMsg);
+
+          const upgradeBtn = document.createElement("button");
+          upgradeBtn.type = "button";
+          upgradeBtn.className = "btn secondary";
+          upgradeBtn.style.marginTop = "8px";
+          upgradeBtn.textContent = "Get Premium";
+          upgradeBtn.addEventListener("click", () => startCheckout(upgradeBtn));
+          entry.appendChild(upgradeBtn);
+        }
+
         list.appendChild(entry);
       });
     } catch (err) {

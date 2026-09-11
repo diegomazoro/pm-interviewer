@@ -743,17 +743,35 @@ def billing_status(user: dict = Depends(require_user)):
         raise HTTPException(status_code=404, detail=str(exc))
 
 
-# ---- History (Premium) ----
+# ---- History ----
 
 @app.get("/history")
 def history(user: dict = Depends(require_user)):
+    # Available to everyone now, not Premium-only -- but content is tiered
+    # per interview, the same rule /evaluate applies live: Premium sees full
+    # feedback on everything, unlimited; free users only get full feedback
+    # on their oldest FREE_INTERVIEW_LIMIT scored interviews (the same ones
+    # that got full feedback live), everything after that shows the score
+    # only. auth.get_history returns newest-first, so chronological
+    # position (0 = oldest) is measured from the back of that list.
     status = auth.get_billing_status(user["id"])
-    if not status["is_premium"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Interview history is a Premium feature. Upgrade to see your past scores and feedback.",
-        )
-    return {"interviews": auth.get_history(user["id"])}
+    rows = auth.get_history(user["id"])
+    total = len(rows)
+
+    interviews = []
+    for idx, row in enumerate(rows):
+        chronological_position = total - 1 - idx
+        full_feedback = status["is_premium"] or chronological_position < auth.FREE_INTERVIEW_LIMIT
+        interviews.append({
+            "case_id": row["case_id"],
+            "session_id": row["session_id"],
+            "score_summary": row["score_summary"],
+            "created_at": row["created_at"],
+            "scorecard": strip_admin_only_sections(row["scorecard"]) if full_feedback else None,
+            "full_feedback": full_feedback,
+        })
+
+    return {"interviews": interviews}
 
 
 # ---- Admin (you only, via ADMIN_SECRET -- see require_admin) ----
