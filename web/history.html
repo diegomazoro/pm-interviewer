@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your history — Loudcase</title>
+<title>My interviews — Loudcase</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,40 +12,52 @@
 </head>
 <body>
 <nav>
-  <a href="index.html" class="brand" aria-label="Loudcase">
-      <svg width="129" height="27" viewBox="0 0 170 36" aria-hidden="true">
-        <defs>
-          <linearGradient id="logoGrad" x1="0" y1="18" x2="170" y2="18" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#d9720f"/>
-            <stop offset="55%" stop-color="#ef9f27"/>
-            <stop offset="100%" stop-color="#ffcf6b"/>
-          </linearGradient>
-          <mask id="logoGradMask" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
-            <rect width="36" height="36" rx="10" fill="#ffffff"/>
-            <rect x="9" y="12" width="4" height="12" rx="2" fill="#000000"/>
-            <rect x="16" y="6" width="4" height="24" rx="2" fill="#000000"/>
-            <rect x="23" y="10" width="4" height="16" rx="2" fill="#000000"/>
-          </mask>
-        </defs>
-        <rect width="36" height="36" rx="10" fill="url(#logoGrad)" mask="url(#logoGradMask)"/>
-        <text x="47" y="18" dominant-baseline="central" text-anchor="start" font-family="Bricolage Grotesque, sans-serif" font-weight="400" font-size="26" textLength="120" lengthAdjust="spacingAndGlyphs" fill="url(#logoGrad)">Loudcase</text>
-      </svg>
-    </a>
+  <div style="display:flex; align-items:center; gap:24px;">
+    <a href="index.html" class="brand" aria-label="Loudcase">
+        <svg width="129" height="27" viewBox="0 0 170 36" aria-hidden="true">
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="18" x2="170" y2="18" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#d9720f"/>
+              <stop offset="55%" stop-color="#ef9f27"/>
+              <stop offset="100%" stop-color="#ffcf6b"/>
+            </linearGradient>
+            <mask id="logoGradMask" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36">
+              <rect width="36" height="36" rx="10" fill="#ffffff"/>
+              <rect x="9" y="12" width="4" height="12" rx="2" fill="#000000"/>
+              <rect x="16" y="6" width="4" height="24" rx="2" fill="#000000"/>
+              <rect x="23" y="10" width="4" height="16" rx="2" fill="#000000"/>
+            </mask>
+          </defs>
+          <rect width="36" height="36" rx="10" fill="url(#logoGrad)" mask="url(#logoGradMask)"/>
+          <text x="47" y="18" dominant-baseline="central" text-anchor="start" font-family="Bricolage Grotesque, sans-serif" font-weight="400" font-size="26" textLength="120" lengthAdjust="spacingAndGlyphs" fill="url(#logoGrad)">Loudcase</text>
+        </svg>
+      </a>
+    <a href="practice.html" style="color: var(--text-muted); text-decoration:none; font-size:14px;">Live cases</a>
+  </div>
   <div style="display:flex; align-items:center; gap:16px;">
-    <a href="practice.html" class="btn secondary" style="padding:8px 16px;font-size:14px;">Choose a case</a>
     <span id="nav-email" style="color: var(--text-muted); font-size: 14px;"></span>
     <a href="#" id="logout-link" class="btn secondary" style="padding:8px 16px;font-size:14px;">Log out</a>
   </div>
 </nav>
 
 <div class="wrap">
-  <h1>Your history</h1>
+  <h1>My interviews</h1>
   <p style="color: var(--text-muted)">Every scored interview you've run. Your first two come with full feedback -- after that, upgrade to Premium to unlock detailed feedback on the rest.</p>
 
   <div id="history-list" style="margin-top:24px; display:flex; flex-direction:column; gap:16px;"></div>
   <p id="empty-msg" style="display:none; color: var(--text-muted);">No scored interviews yet -- head to a case and finish one to see it here.</p>
 </div>
 
+<div class="modal-overlay" id="feedback-modal" style="display:none;">
+  <div class="modal-card">
+    <button type="button" class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
+    <h2 id="modal-title"></h2>
+    <div id="modal-body" class="rendered-feedback"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script>
@@ -57,6 +69,32 @@
   function caseTitle(caseId) {
     const c = CONFIG.cases.find((c) => c.id === caseId);
     return c ? c.title : caseId;
+  }
+
+  // ---- Feedback modal ----
+  const modal = document.getElementById("feedback-modal");
+  const modalTitle = document.getElementById("modal-title");
+  const modalBody = document.getElementById("modal-body");
+
+  function closeModal() {
+    modal.style.display = "none";
+  }
+  document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.style.display === "flex") closeModal();
+  });
+
+  function openFeedback(title, scorecardMarkdown) {
+    modalTitle.textContent = title;
+    // The evaluator's output leans on markdown (bold, numbered lists) --
+    // render it properly instead of dumping raw "**Structuring**: 4/5"
+    // text, and sanitize since transcript-derived text (ultimately shaped
+    // by whatever the candidate said) flows into it.
+    modalBody.innerHTML = DOMPurify.sanitize(marked.parse(scorecardMarkdown));
+    modal.style.display = "flex";
   }
 
   async function startCheckout(btn) {
@@ -116,34 +154,43 @@
         head.appendChild(badge);
         entry.appendChild(head);
 
+        const scoreRow = document.createElement("div");
+        scoreRow.style.cssText = "display:flex; align-items:center; justify-content:space-between; gap:16px;";
+
         const h3 = document.createElement("h3");
+        h3.style.margin = "0";
         h3.textContent = item.score_summary || "Score unavailable";
-        entry.appendChild(h3);
+        scoreRow.appendChild(h3);
+
+        if (item.full_feedback) {
+          const viewBtn = document.createElement("button");
+          viewBtn.type = "button";
+          viewBtn.className = "btn secondary";
+          viewBtn.style.cssText = "align-self:auto; flex-shrink:0;"; // same row as the score, not centered/stacked
+          viewBtn.textContent = "View feedback";
+          viewBtn.addEventListener("click", () => openFeedback(caseTitle(item.case_id), item.scorecard));
+          scoreRow.appendChild(viewBtn);
+        } else {
+          const upgradeBtn = document.createElement("button");
+          upgradeBtn.type = "button";
+          upgradeBtn.className = "btn secondary";
+          upgradeBtn.style.cssText = "align-self:auto; flex-shrink:0;";
+          upgradeBtn.textContent = "Get Premium";
+          upgradeBtn.addEventListener("click", () => startCheckout(upgradeBtn));
+          scoreRow.appendChild(upgradeBtn);
+        }
+        entry.appendChild(scoreRow);
 
         const dateEl = document.createElement("p");
         dateEl.style.cssText = "color: var(--text-muted); font-size:13px;";
         dateEl.textContent = date;
         entry.appendChild(dateEl);
 
-        if (item.full_feedback) {
-          const pre = document.createElement("pre");
-          pre.className = "scorecard";
-          pre.style.margin = "0";
-          pre.textContent = item.scorecard;
-          entry.appendChild(pre);
-        } else {
+        if (!item.full_feedback) {
           const lockedMsg = document.createElement("p");
           lockedMsg.className = "hint";
           lockedMsg.textContent = "Detailed feedback for this interview is a Premium feature.";
           entry.appendChild(lockedMsg);
-
-          const upgradeBtn = document.createElement("button");
-          upgradeBtn.type = "button";
-          upgradeBtn.className = "btn secondary";
-          upgradeBtn.style.marginTop = "8px";
-          upgradeBtn.textContent = "Get Premium";
-          upgradeBtn.addEventListener("click", () => startCheckout(upgradeBtn));
-          entry.appendChild(upgradeBtn);
         }
 
         list.appendChild(entry);

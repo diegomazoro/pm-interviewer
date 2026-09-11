@@ -847,6 +847,58 @@ pre.scorecard {
   margin-top: 16px;
 }
 
+/* Rendered (markdown -> HTML) feedback, used in the history modal instead
+   of dumping the evaluator's raw markdown-flavored text into a <pre> --
+   the model's output leans on bold/lists/headings, which look like literal
+   asterisks and "1." prefixes without this. */
+.rendered-feedback {
+  text-align: left;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.rendered-feedback h1,
+.rendered-feedback h2,
+.rendered-feedback h3 {
+  font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 20px 0 8px;
+}
+
+.rendered-feedback h1:first-child,
+.rendered-feedback h2:first-child,
+.rendered-feedback h3:first-child {
+  margin-top: 0;
+}
+
+.rendered-feedback p {
+  color: var(--text);
+  margin: 10px 0;
+}
+
+.rendered-feedback strong {
+  color: var(--text);
+}
+
+.rendered-feedback ol,
+.rendered-feedback ul {
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
+.rendered-feedback li {
+  margin: 8px 0;
+}
+
+.rendered-feedback li::marker {
+  color: var(--text-muted);
+}
+
+.rendered-feedback hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
 /* ---- Scorecard popup ----
    Shown automatically once the ElevenLabs widget's own "End call" button
    ends the conversation (see session.html's conversationEnded listener),
