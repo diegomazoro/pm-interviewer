@@ -899,6 +899,52 @@ pre.scorecard {
   margin: 16px 0;
 }
 
+/* ---- Feedback widget ----
+   A floating button present on every logged-in page so candidates can
+   report bugs/issues/suggestions from wherever they are, instead of only
+   after something visibly breaks. */
+
+.feedback-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 900;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.feedback-fab:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.feedback-form textarea {
+  width: 100%;
+  min-height: 120px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.feedback-form textarea::placeholder {
+  color: var(--text-muted);
+}
+
 /* ---- Scorecard popup ----
    Shown automatically once the ElevenLabs widget's own "End call" button
    ends the conversation (see session.html's conversationEnded listener),

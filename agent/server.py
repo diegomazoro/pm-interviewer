@@ -64,6 +64,7 @@ logger = logging.getLogger("uvicorn.error")
 
 import auth
 import billing
+import email_alerts
 from case_loader import load_case
 from interviewer import build_system_prompt as build_interviewer_prompt
 from evaluator import build_system_prompt as build_evaluator_prompt, format_transcript
@@ -774,6 +775,23 @@ def history(user: dict = Depends(require_user)):
     return {"interviews": interviews}
 
 
+# ---- Feedback ----
+
+class FeedbackRequest(BaseModel):
+    message: str
+    page: Optional[str] = None
+
+
+@app.post("/feedback")
+def submit_feedback(req: FeedbackRequest, user: dict = Depends(require_user)):
+    message = req.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Feedback message can't be empty.")
+    auth.record_feedback(user["id"], req.page, message)
+    email_alerts.send_feedback_alert(user["email"], req.page, message)
+    return {"received": True}
+
+
 # ---- Admin (you only, via ADMIN_SECRET -- see require_admin) ----
 
 @app.get("/admin/users")
@@ -796,6 +814,11 @@ def admin_interview_history(_: None = Depends(require_admin)):
     ).fetchall()
     conn.close()
     return {"history": [dict(r) for r in rows]}
+
+
+@app.get("/admin/feedback")
+def admin_feedback(_: None = Depends(require_admin)):
+    return {"feedback": auth.get_all_feedback()}
 
 
 class AdminSetPremiumRequest(BaseModel):

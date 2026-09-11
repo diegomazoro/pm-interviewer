@@ -90,6 +90,22 @@ def init_db() -> None:
         )
         """
     )
+
+    # Free-text feedback submitted via the "Feedback" button present
+    # throughout the app -- `page` is whatever page the user was on when
+    # they opened it (e.g. "session.html"), for context on what they were
+    # doing when they hit a bug or had a suggestion.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            page TEXT,
+            message TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+        """
+    )
     conn.commit()
     conn.close()
 
@@ -234,6 +250,29 @@ def get_history(user_id: int) -> list:
         "SELECT case_id, session_id, score_summary, scorecard, created_at "
         "FROM interview_history WHERE user_id = ? ORDER BY created_at DESC",
         (user_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ---- Feedback ----
+
+def record_feedback(user_id: int, page: str, message: str) -> None:
+    conn = _get_conn()
+    conn.execute(
+        "INSERT INTO feedback (user_id, page, message, created_at) VALUES (?, ?, ?, ?)",
+        (user_id, page, message, int(time.time())),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_all_feedback() -> list:
+    conn = _get_conn()
+    rows = conn.execute(
+        "SELECT f.id, u.email, f.page, f.message, f.created_at "
+        "FROM feedback f JOIN users u ON u.id = f.user_id "
+        "ORDER BY f.created_at DESC"
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]

@@ -366,5 +366,82 @@
     pollSessionStatus();
   }
 </script>
+
+<button type="button" class="feedback-fab" id="feedback-fab">Feedback</button>
+<div class="modal-overlay" id="product-feedback-modal" style="display:none;">
+  <div class="modal-card">
+    <button type="button" class="modal-close" id="product-feedback-close-btn" aria-label="Close">&times;</button>
+    <h2>Send feedback</h2>
+    <p>Found a bug, or have a suggestion? Let us know.</p>
+    <form class="feedback-form" id="product-feedback-form">
+      <textarea id="product-feedback-text" placeholder="What's on your mind?" required></textarea>
+      <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
+        <button type="submit" class="btn" id="product-feedback-submit"><span class="btn-shine">Send</span></button>
+        <span class="hint" id="product-feedback-status"></span>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  const fab = document.getElementById("feedback-fab");
+  const modal = document.getElementById("product-feedback-modal");
+  const form = document.getElementById("product-feedback-form");
+  const textarea = document.getElementById("product-feedback-text");
+  const submitBtn = document.getElementById("product-feedback-submit");
+  const status = document.getElementById("product-feedback-status");
+
+  function openFeedbackModal() {
+    status.textContent = "";
+    textarea.value = "";
+    modal.style.display = "flex";
+    textarea.focus();
+  }
+  function closeFeedbackModal() {
+    modal.style.display = "none";
+  }
+
+  fab.addEventListener("click", openFeedbackModal);
+  document.getElementById("product-feedback-close-btn").addEventListener("click", closeFeedbackModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeFeedbackModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.style.display === "flex") closeFeedbackModal();
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const message = textarea.value.trim();
+    if (!message) return;
+    submitBtn.disabled = true;
+    status.textContent = "Sending...";
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ message, page: window.location.pathname.split("/").pop() }),
+      });
+      if (res.status === 401) {
+        status.textContent = "Please log in again to send feedback.";
+        submitBtn.disabled = false;
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        status.textContent = data.detail || "Something went wrong sending your feedback.";
+        submitBtn.disabled = false;
+        return;
+      }
+      status.textContent = "Thanks -- we got it!";
+      submitBtn.disabled = false;
+      setTimeout(closeFeedbackModal, 1200);
+    } catch (err) {
+      status.textContent = "Something went wrong. Please try again.";
+      submitBtn.disabled = false;
+    }
+  });
+})();
+</script>
 </body>
 </html>
