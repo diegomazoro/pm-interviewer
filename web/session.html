@@ -181,9 +181,19 @@
       modalBody.appendChild(pre);
     }
     function showUpsell(detail) {
+      // detail is {score_summary, message} once the candidate has used up
+      // their free interviews -- they still get scored, just not the full
+      // rubric breakdown, so show the score first and the upgrade prompt
+      // (with the Get Premium CTA) below it.
       modalBody.innerHTML = `<h2>Your scorecard</h2>`;
+      if (detail && detail.score_summary) {
+        const pre = document.createElement("pre");
+        pre.className = "scorecard";
+        pre.textContent = detail.score_summary;
+        modalBody.appendChild(pre);
+      }
       const p = document.createElement("p");
-      p.textContent = detail;
+      p.textContent = (detail && detail.message) || detail;
       modalBody.appendChild(p);
       modalBody.insertAdjacentHTML(
         "beforeend",

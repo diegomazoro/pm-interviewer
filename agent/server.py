@@ -492,21 +492,16 @@ class EvaluateRequest(BaseModel):
 
 @app.post("/evaluate")
 def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
-    # Free-plan usage gate. Checked BEFORE the (paid, per-call) Claude
-    # request below so a free user who's used up their free interviews
-    # doesn't cost us an evaluator call just to get turned away. Premium is
-    # unlimited. Free users get full detailed feedback (same as Premium) on
-    # each of their FREE_INTERVIEW_LIMIT interviews -- there's no separate
-    # "score only" tier anymore, it's full feedback up to the limit, then a
-    # hard block.
+    # Free users get full detailed feedback (same as Premium) on each of
+    # their FREE_INTERVIEW_LIMIT interviews. Past that, they still get
+    # scored -- just the score, not the detailed rubric breakdown -- with an
+    # upsell alongside it. That means, unlike before, an over-limit
+    # interview still costs an evaluator call (can't skip it up front the
+    # way the old score-only block did, since there's no score to show
+    # without actually running it) -- over_limit is only decided at the end,
+    # after scoring, so it changes what's returned, not whether Claude runs.
     status = auth.get_billing_status(user["id"])
-    if not status["is_premium"] and status["interviews_used"] >= auth.FREE_INTERVIEW_LIMIT:
-        raise HTTPException(
-            status_code=402,
-            detail=f"Advanced feedback is a Premium feature. You had "
-                    f"{auth.FREE_INTERVIEW_LIMIT} free scored interview(s). Upgrade for "
-                    "unlimited interviews and detailed feedback.",
-        )
+    over_limit = not status["is_premium"] and status["interviews_used"] >= auth.FREE_INTERVIEW_LIMIT
 
     case = load_case(str(case_path_for(req.case_id)))
 
@@ -569,12 +564,26 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
         scorecard=scorecard,
     )
 
-    # Free users get the same full scorecard as Premium for each of their
-    # FREE_INTERVIEW_LIMIT interviews -- the gate above is what enforces the
-    # limit, not a truncated response here. The INTEGRITY check + closing
-    # narrative are still stored above (record_interview got the untouched
-    # `scorecard`) for admin review; strip_admin_only_sections keeps them
-    # out of what the candidate actually sees.
+    if over_limit:
+        # Score, but not the detailed rubric breakdown -- that's the
+        # Premium upsell. The full scorecard (INTEGRITY + narrative
+        # included) is still stored above for admin review either way.
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "score_summary": score_summary or "Your score is being calculated.",
+                "message": (
+                    f"You had {auth.FREE_INTERVIEW_LIMIT} free scored interview(s). Upgrade to "
+                    "Premium for unlimited interviews with detailed feedback."
+                ),
+            },
+        )
+
+    # Free users (still under their limit) get the same full scorecard as
+    # Premium. The INTEGRITY check + closing narrative are still stored
+    # above (record_interview got the untouched `scorecard`) for admin
+    # review; strip_admin_only_sections keeps them out of what the
+    # candidate actually sees.
     return {
         "case_id": req.case_id,
         "scorecard": strip_admin_only_sections(scorecard),
