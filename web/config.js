@@ -68,6 +68,13 @@ const CONFIG = {
       type: "Business Sense",
       firstMessage: "Welcome to Loudcase, let's get started with the case. You're a PM at Linear. Your team has capacity for one major initiative next quarter, and two candidates are on the table: a native mobile app, currently Linear is web/desktop only with a weak mobile web experience, and a customer-requested advanced automation and workflow rules feature for power users. Your engineering lead wants your recommendation with reasoning, not just a gut call. How would you approach deciding?",
     },
+    {
+      id: "case_16_pm_market_share_mercadolibre",
+      title: "Mercado Libre",
+      subtitle: "Why has active buyer growth stalled in two markets?",
+      type: "Analytical",
+      firstMessage: "Welcome to Loudcase, let's get started with the case. You're a Product Manager on Mercado Libre's marketplace growth team. Monthly active buyers have kept growing in Brazil, Mexico, and Argentina, but in Colombia and Peru specifically, active buyer growth has stalled over the last two quarters -- even though overall online shopping demand in those two countries is still growing. Your VP of Growth wants to understand why, and what to do about it.",
+    },
 
     // Product Sense cases -- open-ended design/improvement prompts, a
     // different (and harder) PM interview format than the diagnostic
@@ -120,6 +127,13 @@ const CONFIG = {
       subtitle: "Make the corporate card customers actually keep using.",
       type: "Product Sense",
       firstMessage: "Welcome to Loudcase, let's get started with the case. You're a Product Manager at Jeeves, a corporate card and spend-management platform for startups and SMBs across Latin America, the US, and Europe. Companies sign up, get approved, and issue Jeeves cards to their employees -- but for a meaningful share of them, Jeeves ends up as a secondary card that gets used for a few months and then fades, rather than becoming the company's primary corporate card. Your Head of Product wants to improve retention by making Jeeves the card that new customers actually keep using. How would you approach this?",
+    },
+    {
+      id: "case_17_pm_product_sense_nubank",
+      title: "Nubank",
+      subtitle: "Cross-sell more products without extending bad credit.",
+      type: "Product Sense",
+      firstMessage: "Welcome to Loudcase, let's get started with the case. You're a Product Manager at Nubank. A large share of customers still only actively use their Nubank credit card and haven't adopted any of Nubank's other products. Leadership wants to grow revenue per customer by getting more of these credit-card-only customers to also adopt personal loans or NuInvest, Nubank's investment product -- but the risk team is wary of extending more credit to customers who are still early or inconsistent in their credit history with Nubank. How would you approach growing cross-product adoption without increasing credit risk?",
     },
   ],
 };
