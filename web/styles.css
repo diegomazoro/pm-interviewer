@@ -908,8 +908,8 @@ pre.scorecard {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  min-height: 200px;
-  margin-top: 20px;
+  min-height: 140px;
+  margin-top: 32px;
   padding: 16px;
   border-radius: 14px;
   border: 2px solid #1f2430;
