@@ -114,5 +114,12 @@ const CONFIG = {
       type: "Product Sense",
       firstMessage: "Welcome to Loudcase, let's get started with the case. You're a Product Manager on the Alexa devices team at Amazon. Customers can already say 'Alexa, reorder paper towels' to repurchase something they've bought before, but usage of this is low -- most people simply forget to reorder essentials until they've already run out. Your team wants to help customers replenish household essentials -- things like paper towels, detergent, coffee -- before they run out, using Alexa. How would you approach designing this?",
     },
+    {
+      id: "case_15_pm_product_sense_jeeves",
+      title: "Jeeves",
+      subtitle: "Make the corporate card customers actually keep using.",
+      type: "Product Sense",
+      firstMessage: "Welcome to Loudcase, let's get started with the case. You're a Product Manager at Jeeves, a corporate card and spend-management platform for startups and SMBs across Latin America, the US, and Europe. Companies sign up, get approved, and issue Jeeves cards to their employees -- but for a meaningful share of them, Jeeves ends up as a secondary card that gets used for a few months and then fades, rather than becoming the company's primary corporate card. Your Head of Product wants to improve retention by making Jeeves the card that new customers actually keep using. How would you approach this?",
+    },
   ],
 };
