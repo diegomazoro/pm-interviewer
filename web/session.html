@@ -79,17 +79,17 @@
       <textarea id="notes-field" placeholder="Write relevant data shared by the interviewer"></textarea>
     </div>
 
-    <!-- Scoring is meant to run automatically once the widget's own "End
-         call" button ends the conversation (see the shadow-DOM
-         MutationObserver below) -- but the widget exposes no supported,
-         documented event for "call ended" (its only public DOM event,
-         "elevenlabs-convai:call", fires before the call starts, and the
-         widget's own startSession() call unconditionally overwrites
-         onDisconnect/onStatusChange afterwards, discarding anything we set
-         there). The auto-detection is a best-effort heuristic against
-         undocumented internals, so this manual button stays as a fallback
-         that always works regardless of widget internals. -->
+    <!-- Scoring runs automatically once ElevenLabs' own post-call webhook
+         confirms the call has ended (see /webhooks/elevenlabs and
+         /session-status in agent/server.py, and pollSessionStatus below) --
+         that webhook is the only mechanism ElevenLabs guarantees for "call
+         ended," and it can take up to ~30 seconds to arrive after the
+         candidate actually hangs up, since it fires only after ElevenLabs'
+         own call analysis finishes. The note below sets that expectation up
+         front so a silent gap doesn't read as broken; the manual button
+         stays as a fallback that always works regardless of that delay. -->
     <div class="results-actions">
+      <p class="hint" style="margin-bottom:10px;">Your scorecard pops up automatically, usually within 30 seconds of ending the interview. Didn't want to wait, or nothing showed up?</p>
       <button type="button" class="btn secondary" id="evaluate-btn">Get my scorecard</button>
     </div>
   </div>
@@ -364,7 +364,7 @@
       } catch (err) {
         // Network hiccup on a background poll -- just try again next tick.
       }
-      setTimeout(pollSessionStatus, 3000);
+      setTimeout(pollSessionStatus, 1500);
     }
     pollSessionStatus();
   }
