@@ -32,6 +32,7 @@
       </svg>
     </a>
   <div style="display:flex; align-items:center; gap:16px;">
+    <button type="button" id="feedback-fab" style="background:none; border:none; color: var(--text-muted); font-size:14px; font-family:inherit; cursor:pointer; padding:0;">Feedback</button>
     <span id="nav-email" style="color: var(--text-muted); font-size: 14px;"></span>
     <a href="#" id="logout-link" class="btn secondary" style="padding:8px 16px;font-size:14px;">Log out</a>
   </div>
@@ -367,17 +368,14 @@
   }
 </script>
 
-<button type="button" class="feedback-fab" id="feedback-fab">Feedback</button>
 <div class="modal-overlay" id="product-feedback-modal" style="display:none;">
   <div class="modal-card">
     <button type="button" class="modal-close" id="product-feedback-close-btn" aria-label="Close">&times;</button>
-    <h2>Send feedback</h2>
-    <p>Found a bug, or have a suggestion? Let us know.</p>
     <form class="feedback-form" id="product-feedback-form">
-      <textarea id="product-feedback-text" placeholder="What's on your mind?" required></textarea>
-      <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
-        <button type="submit" class="btn" id="product-feedback-submit"><span class="btn-shine">Send</span></button>
-        <span class="hint" id="product-feedback-status"></span>
+      <textarea id="product-feedback-text" placeholder="Type your feedback here..." required></textarea>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:16px;">
+        <span class="hint" id="product-feedback-status">We don't respond to submissions, but we read all of them carefully.</span>
+        <button type="submit" class="btn" id="product-feedback-submit"><span class="btn-shine">Submit</span></button>
       </div>
     </form>
   </div>
@@ -390,9 +388,10 @@
   const textarea = document.getElementById("product-feedback-text");
   const submitBtn = document.getElementById("product-feedback-submit");
   const status = document.getElementById("product-feedback-status");
+  const FEEDBACK_DEFAULT_STATUS = "We don't respond to submissions, but we read all of them carefully.";
 
   function openFeedbackModal() {
-    status.textContent = "";
+    status.textContent = FEEDBACK_DEFAULT_STATUS;
     textarea.value = "";
     modal.style.display = "flex";
     textarea.focus();
