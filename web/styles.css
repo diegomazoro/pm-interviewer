@@ -905,9 +905,11 @@ pre.scorecard {
    bugs/issues/suggestions from wherever they are in the app. */
 
 /* Scoped to this modal specifically (not the shared .modal-card h2 rule
-   other modals use) so shrinking this gap doesn't affect them. */
+   other modals use) so this gap doesn't affect them. Zeroed here so the
+   textarea's own margin-top below is the single source of that spacing,
+   rather than splitting it across two rules. */
 #product-feedback-modal h2 {
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 
 .feedback-form textarea {
@@ -915,7 +917,7 @@ pre.scorecard {
   box-sizing: border-box;
   width: 100%;
   min-height: 140px;
-  margin-top: 8px;
+  margin-top: 22px;
   padding: 16px;
   border-radius: 14px;
   border: 2px solid #1f2430;
