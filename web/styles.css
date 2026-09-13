@@ -900,9 +900,18 @@ pre.scorecard {
 }
 
 /* ---- Feedback widget ----
-   The "Feedback" nav button (id="feedback-fab", styled inline to match the
-   other muted nav links) opens this modal so candidates can report
-   bugs/issues/suggestions from wherever they are in the app. */
+   The "Feedback?" nav button (id="feedback-fab") opens this modal so
+   candidates can report bugs/issues/suggestions from wherever they are in
+   the app. Base look (amber pill outline) stays inline on the element
+   itself across pages; just the hover state lives here since inline
+   styles can't express :hover. */
+#feedback-fab {
+  transition: background-color 0.15s ease;
+}
+
+#feedback-fab:hover {
+  background: rgba(239, 159, 39, 0.14);
+}
 
 /* Scoped to this modal specifically (not the shared .modal-card h2 rule
    other modals use) so this gap doesn't affect them. Zeroed here so the
