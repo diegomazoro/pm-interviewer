@@ -206,10 +206,11 @@
 <div class="modal-overlay" id="product-feedback-modal" style="display:none;">
   <div class="modal-card">
     <button type="button" class="modal-close" id="product-feedback-close-btn" aria-label="Close">&times;</button>
+    <h2>Send us feedback</h2>
     <form class="feedback-form" id="product-feedback-form">
       <textarea id="product-feedback-text" placeholder="Type your feedback here..." required></textarea>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:16px;">
-        <span class="hint" id="product-feedback-status">We read all the submissions carefully and we will try to get back to you asap :)</span>
+        <span class="hint" id="product-feedback-status">We read all the submissions carefully :)</span>
         <button type="submit" class="btn" id="product-feedback-submit"><span class="btn-shine">Submit</span></button>
       </div>
     </form>
@@ -223,7 +224,7 @@
   const textarea = document.getElementById("product-feedback-text");
   const submitBtn = document.getElementById("product-feedback-submit");
   const status = document.getElementById("product-feedback-status");
-  const FEEDBACK_DEFAULT_STATUS = "We read all the submissions carefully and we will try to get back to you asap :)";
+  const FEEDBACK_DEFAULT_STATUS = "We read all the submissions carefully :)";
 
   function openFeedbackModal() {
     status.textContent = FEEDBACK_DEFAULT_STATUS;
