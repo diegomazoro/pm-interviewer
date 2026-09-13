@@ -224,7 +224,7 @@
         errorMsg.style.display = "block";
         return;
       }
-      window.location.href = data.url;
+      window.open(data.url, "_blank", "noopener,noreferrer");
     } catch (err) {
       errorMsg.textContent = `Request failed: ${err}`;
       errorMsg.style.display = "block";

@@ -207,8 +207,8 @@
     }
 
     // Same checkout flow as the "Get Premium" button on index.html --
-    // creates a real Stripe Checkout session server-side and redirects
-    // there, rather than just linking to the marketing pricing section.
+    // creates a real Stripe Checkout session server-side and opens it in a
+    // new tab, rather than just linking to the marketing pricing section.
     async function startCheckout() {
       const btn = document.getElementById("modal-get-premium-btn");
       const errorEl = document.getElementById("modal-premium-error");
@@ -234,7 +234,8 @@
           if (btn) btn.disabled = false;
           return;
         }
-        window.location.href = data.url;
+        window.open(data.url, "_blank", "noopener,noreferrer");
+        if (btn) btn.disabled = false;
       } catch (err) {
         errorEl.textContent = "Something went wrong. Refresh the page and try again, or email diegomazorosete@gmail.com.";
         errorEl.style.display = "block";

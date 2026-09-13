@@ -120,7 +120,8 @@
         if (btn) btn.disabled = false;
         return;
       }
-      window.location.href = data.url;
+      window.open(data.url, "_blank", "noopener,noreferrer");
+      if (btn) btn.disabled = false;
     } catch (err) {
       alert("Something went wrong. Refresh the page and try again, or email diegomazorosete@gmail.com.");
       if (btn) btn.disabled = false;
