@@ -280,36 +280,30 @@
 })();
 </script>
 <script>
-  // Per-character "roll" reveal for .btn-shine labels, matching pomelo.la's
-  // actual button text animation (see styles.css for the full explanation).
-  // Progressively enhances plain text into a row of .btn-char cells; safe
-  // to call more than once since already-enhanced elements are skipped.
-  function enhanceButtonShine(el) {
-    if (el.dataset.shineEnhanced) return;
-    el.dataset.shineEnhanced = "true";
-    const text = el.textContent;
-    el.textContent = "";
-    [...text].forEach((ch, i) => {
-      const cell = document.createElement("span");
-      cell.className = "btn-char";
-      cell.style.setProperty("--i", i);
-      const inner = document.createElement("span");
-      inner.className = "btn-char-inner";
-      const row1 = document.createElement("span");
-      row1.className = "btn-char-row";
-      row1.textContent = ch === " " ? " " : ch;
-      const row2 = row1.cloneNode(true);
-      row2.setAttribute("aria-hidden", "true");
-      inner.appendChild(row1);
-      inner.appendChild(row2);
-      cell.appendChild(inner);
-      el.appendChild(cell);
+  // Cursor-tracking spotlight for .btn (not .btn.secondary), matching
+  // pomelo.la's actual button hover effect (see styles.css for the full
+  // explanation -- their "duplicate text" DOM layer is same-color,
+  // same-position, and functionally invisible; this spotlight is the
+  // effect that's actually visible). Appends a .btn-spotlight overlay and
+  // keeps its --x/--y CSS vars updated on mousemove; safe to call more
+  // than once since already-enhanced elements are skipped.
+  function enhanceButtonSpotlight(btn) {
+    if (btn.dataset.spotlightEnhanced) return;
+    btn.dataset.spotlightEnhanced = "true";
+    const spot = document.createElement("span");
+    spot.className = "btn-spotlight";
+    spot.setAttribute("aria-hidden", "true");
+    btn.appendChild(spot);
+    btn.addEventListener("mousemove", (e) => {
+      const rect = btn.getBoundingClientRect();
+      spot.style.setProperty("--x", `${e.clientX - rect.left}px`);
+      spot.style.setProperty("--y", `${e.clientY - rect.top}px`);
     });
   }
-  function enhanceAllButtonShines(root) {
-    (root || document).querySelectorAll(".btn-shine").forEach(enhanceButtonShine);
+  function enhanceAllButtonSpotlights(root) {
+    (root || document).querySelectorAll(".btn:not(.secondary)").forEach(enhanceButtonSpotlight);
   }
-  enhanceAllButtonShines();
+  enhanceAllButtonSpotlights();
 </script>
 </body>
 </html>
