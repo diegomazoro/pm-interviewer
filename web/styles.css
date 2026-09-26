@@ -283,8 +283,8 @@ nav a {
 }
 
 @keyframes btn-shine-sweep {
-  from { background-position: 0% 0; }
-  to { background-position: 100% 0; }
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
 }
 
 .btn:hover .btn-shine {
