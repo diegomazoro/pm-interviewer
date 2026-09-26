@@ -47,6 +47,14 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 FREE_INTERVIEW_LIMIT = 2
 
+# Premium is marketed as "Unlimited" and should stay that way in the UI --
+# this is a quiet fair-use backstop only, well above any realistic prep
+# workload (candidates realistically run 15-20 interviews before a real
+# one), so no genuine user should ever hit it. It exists purely to bound
+# worst-case cost exposure from a one-time $150 charge against per-use
+# voice/LLM costs, not to be advertised or shown in the pricing table.
+PREMIUM_INTERVIEW_LIMIT = 50
+
 
 def init_db() -> None:
     conn = sqlite3.connect(DB_PATH)

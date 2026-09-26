@@ -182,10 +182,14 @@
       modalBody.appendChild(pre);
     }
     function showUpsell(detail) {
-      // detail is {score_summary, message} once the candidate has used up
-      // their free interviews -- they still get scored, just not the full
-      // rubric breakdown, so show the score first and the upgrade prompt
-      // (with the Get Premium CTA) below it.
+      // detail is {score_summary, message, show_upgrade_cta} once the
+      // candidate has used up their free interviews (or, for a Premium
+      // user, hit the quiet fair-use cap) -- they still get scored, just
+      // not the full rubric breakdown, so show the score first and the
+      // message below it. The Get Premium CTA only makes sense for a free
+      // user hitting their limit, not a Premium user hitting the fair-use
+      // cap (they're already Premium) -- show_upgrade_cta distinguishes
+      // the two. Defaults to shown if the field is missing, for safety.
       modalBody.innerHTML = `<h2>Your scorecard</h2>`;
       if (detail && detail.score_summary) {
         const pre = document.createElement("pre");
@@ -196,15 +200,18 @@
       const p = document.createElement("p");
       p.textContent = (detail && detail.message) || detail;
       modalBody.appendChild(p);
-      modalBody.insertAdjacentHTML(
-        "beforeend",
-        `<div style="text-align:center;">
-           <button type="button" class="btn" id="modal-get-premium-btn" style="display:inline-block; margin-top:12px;"><span class="btn-shine">Get Premium</span></button>
-           <p class="hint" id="modal-premium-error" style="display:none;"></p>
-         </div>`
-      );
-      document.getElementById("modal-get-premium-btn").addEventListener("click", startCheckout);
-      enhanceAllButtonSpotlights(modalBody);
+      const showUpgradeCta = !(detail && detail.show_upgrade_cta === false);
+      if (showUpgradeCta) {
+        modalBody.insertAdjacentHTML(
+          "beforeend",
+          `<div style="text-align:center;">
+             <button type="button" class="btn" id="modal-get-premium-btn" style="display:inline-block; margin-top:12px;"><span class="btn-shine">Get Premium</span></button>
+             <p class="hint" id="modal-premium-error" style="display:none;"></p>
+           </div>`
+        );
+        document.getElementById("modal-get-premium-btn").addEventListener("click", startCheckout);
+        enhanceAllButtonSpotlights(modalBody);
+      }
     }
 
     // Same checkout flow as the "Get Premium" button on index.html --

@@ -501,8 +501,17 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
     # way the old score-only block did, since there's no score to show
     # without actually running it) -- over_limit is only decided at the end,
     # after scoring, so it changes what's returned, not whether Claude runs.
+    #
+    # Premium has its own, much higher cap (PREMIUM_INTERVIEW_LIMIT) -- a
+    # quiet fair-use backstop, not something shown in the pricing table
+    # (Premium is marketed as "Unlimited" and should stay that way). It's
+    # well above any realistic prep workload, so it's not expected to ever
+    # actually trigger for a genuine user.
     status = auth.get_billing_status(user["id"])
-    over_limit = not status["is_premium"] and status["interviews_used"] >= auth.FREE_INTERVIEW_LIMIT
+    if status["is_premium"]:
+        over_limit = status["interviews_used"] >= auth.PREMIUM_INTERVIEW_LIMIT
+    else:
+        over_limit = status["interviews_used"] >= auth.FREE_INTERVIEW_LIMIT
 
     case = load_case(str(case_path_for(req.case_id)))
 
@@ -567,16 +576,26 @@ def evaluate(req: EvaluateRequest, user: dict = Depends(require_user)):
 
     if over_limit:
         # Score, but not the detailed rubric breakdown -- that's the
-        # Premium upsell. The full scorecard (INTEGRITY + narrative
+        # Premium upsell (or, for a Premium user past the fair-use cap, just
+        # a hard stop -- they're already Premium, so no upgrade CTA makes
+        # sense for them). The full scorecard (INTEGRITY + narrative
         # included) is still stored above for admin review either way.
+        if status["is_premium"]:
+            message = (
+                f"You've reached our fair-use limit of {auth.PREMIUM_INTERVIEW_LIMIT} scored "
+                "interviews. If you need more, reach out to us at diegomazorosete@gmail.com."
+            )
+        else:
+            message = (
+                "You used all your free interviews. Upgrade to Premium for unlimited "
+                "interviews with detailed feedback."
+            )
         raise HTTPException(
             status_code=402,
             detail={
                 "score_summary": score_summary or "Your score is being calculated.",
-                "message": (
-                    "You used all your free interviews. Upgrade to Premium for unlimited "
-                    "interviews with detailed feedback."
-                ),
+                "message": message,
+                "show_upgrade_cta": not status["is_premium"],
             },
         )
 
