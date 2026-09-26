@@ -258,13 +258,32 @@ nav a {
   border-radius: 18px;
 }
 
+/* A transparent band sweeps left-to-right across the solid white text on
+   hover -- not a brightness highlight, a moving "hole" of transparency,
+   per direct visual confirmation against the real pomelo button (their
+   automated DOM/opacity signals looked like a no-op, but a human eye
+   watching it play sees this wipe clearly). Same background-clip:text
+   technique as the very first version of this file, just with a
+   `transparent` stop instead of a lighter highlight color. */
 .btn-shine {
+  background-image: linear-gradient(90deg, #ffffff 0%, #ffffff 42%, transparent 50%, #ffffff 58%, #ffffff 100%);
+  background-size: 250% 100%;
+  background-position: 200% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   color: #ffffff;
+  transition: background-position 0.6s ease;
+}
+
+.btn:hover .btn-shine {
+  background-position: -50% 0;
 }
 
 /* Appended as a child of .btn by enhanceButtonSpotlight() (see the
    per-page script that calls it) -- --x/--y are kept updated on
-   mousemove so the glow tracks the cursor. */
+   mousemove so the glow tracks the cursor. Kept subtle -- an earlier pass
+   at white/0.6 read as too strong. */
 .btn-spotlight {
   position: absolute;
   inset: 0;
@@ -275,7 +294,7 @@ nav a {
 }
 
 .btn:hover .btn-spotlight {
-  opacity: 0.6;
+  opacity: 0.3;
 }
 
 .btn.secondary {
