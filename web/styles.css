@@ -1241,3 +1241,52 @@ pre.scorecard {
 .admin-table tbody tr:last-child td {
   border-bottom: none;
 }
+
+/* ---- Landing page FAQ ----
+   Native <details>/<summary> -- no JS needed for an accordion. */
+.faq-list {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.faq-list details {
+  border-bottom: 1px solid var(--border);
+  padding: 18px 0;
+}
+
+.faq-list details:first-child {
+  border-top: 1px solid var(--border);
+}
+
+.faq-list summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.faq-list summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-list summary::after {
+  content: "+";
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 400;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.faq-list details[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.faq-list details p {
+  color: var(--text-muted);
+  margin: 12px 0 0;
+  line-height: 1.6;
+}
