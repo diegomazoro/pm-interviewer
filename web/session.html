@@ -204,6 +204,7 @@
          </div>`
       );
       document.getElementById("modal-get-premium-btn").addEventListener("click", startCheckout);
+      enhanceAllButtonShines(modalBody);
     }
 
     // Same checkout flow as the "Get Premium" button on index.html --
@@ -445,6 +446,40 @@
     }
   });
 })();
+</script>
+<script>
+  // Per-character "roll" reveal for .btn-shine labels, matching pomelo.la's
+  // actual button text animation (see styles.css for the full explanation).
+  // Progressively enhances plain text into a row of .btn-char cells; safe
+  // to call more than once since already-enhanced elements are skipped --
+  // needed here since showUpsell() inserts a fresh .btn-shine at runtime,
+  // after this initial pass already ran.
+  function enhanceButtonShine(el) {
+    if (el.dataset.shineEnhanced) return;
+    el.dataset.shineEnhanced = "true";
+    const text = el.textContent;
+    el.textContent = "";
+    [...text].forEach((ch, i) => {
+      const cell = document.createElement("span");
+      cell.className = "btn-char";
+      cell.style.setProperty("--i", i);
+      const inner = document.createElement("span");
+      inner.className = "btn-char-inner";
+      const row1 = document.createElement("span");
+      row1.className = "btn-char-row";
+      row1.textContent = ch === " " ? " " : ch;
+      const row2 = row1.cloneNode(true);
+      row2.setAttribute("aria-hidden", "true");
+      inner.appendChild(row1);
+      inner.appendChild(row2);
+      cell.appendChild(inner);
+      el.appendChild(cell);
+    });
+  }
+  function enhanceAllButtonShines(root) {
+    (root || document).querySelectorAll(".btn-shine").forEach(enhanceButtonShine);
+  }
+  enhanceAllButtonShines();
 </script>
 </body>
 </html>

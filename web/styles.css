@@ -224,11 +224,12 @@ nav a {
 }
 
 /* CTA button style modeled on pomelo.la/en's "Contact us" button: sharp
-   corners that smoothly morph into a rounded pill on hover, and a shine
-   that sweeps across the TEXT itself (not the button background) on
-   hover, via a background-clip: text gradient. Flat solid amber fill
-   (not a gradient) so it matches the other flat-amber accents on the
-   site -- the logomark and the "3 steps" number circles. */
+   corners that smoothly morph into a rounded pill on hover -- no glow/blur
+   behind it on the real pomelo button, confirmed by inspecting it directly
+   (rest/mid-hover/settled screenshots all show a plain gradient fill, no
+   box-shadow). Flat solid amber fill (not a gradient) so it matches the
+   other flat-amber accents on the site -- the logomark and the "3 steps"
+   number circles. */
 .btn {
   position: relative;
   display: inline-block;
@@ -242,32 +243,55 @@ nav a {
   cursor: pointer;
   font-size: 16px;
   overflow: hidden;
-  transition: border-radius 0.4s cubic-bezier(0.4, 0.03, 0.685, 0.22), box-shadow 0.2s ease;
+  transition: border-radius 0.4s cubic-bezier(0.4, 0.03, 0.685, 0.22);
 }
 
 .btn:hover {
   color: #ffffff;
   border-radius: 18px;
-  box-shadow: 0 0 28px 4px rgba(239, 159, 39, 0.45);
 }
 
-/* Wrap a button's label in <span class="btn-shine">Label</span> to get
-   the text-shine sweep. A golden highlight band sits just off-screen at
-   rest (background-position 200% 0) and sweeps across the letters on
-   hover. */
+/* Per-character roll reveal, matching pomelo's actual button text
+   animation (inspected directly: it dynamically splits the label into
+   individual characters on hover and animates each one in with a
+   staggered vertical roll -- NOT a gradient "shine" sweep, which is what
+   this used to be here). <span class="btn-shine">Label</span> gets
+   progressively enhanced by enhanceButtonShine() (see the per-page
+   script that calls it) into a row of .btn-char cells, each clipping a
+   2-row .btn-char-inner (the visible character on top, an identical
+   aria-hidden duplicate directly below); hovering the button translates
+   every .btn-char-inner up by half its height, revealing the duplicate
+   row, with each character's transition-delay staggered via --i so the
+   roll sweeps left-to-right across the label instead of moving as one
+   block. */
 .btn-shine {
-  background-image: linear-gradient(115deg, #ffffff 0%, #ffffff 40%, #ffe9b3 48%, #ffffff 56%, #ffffff 100%);
-  background-size: 250% 100%;
-  background-position: 200% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  display: inline-flex;
   color: #ffffff;
-  transition: background-position 0.7s ease;
 }
 
-.btn:hover .btn-shine {
-  background-position: -50% 0;
+.btn-char {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.2em;
+  line-height: 1.2em;
+  vertical-align: top;
+}
+
+.btn-char-inner {
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.4, 0.03, 0.685, 0.22);
+  transition-delay: calc(var(--i, 0) * 25ms);
+}
+
+.btn-char-row {
+  display: block;
+  height: 1.2em;
+  line-height: 1.2em;
+  white-space: pre;
+}
+
+.btn:hover .btn-char-inner {
+  transform: translateY(-50%);
 }
 
 .btn.secondary {
