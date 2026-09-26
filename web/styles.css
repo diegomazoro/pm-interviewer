@@ -271,7 +271,7 @@ nav a {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.5s ease-in-out;
-  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #ffe9b3, transparent 40%);
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), #ffffff, transparent 45%);
 }
 
 .btn:hover .btn-spotlight {
