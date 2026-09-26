@@ -264,7 +264,13 @@ nav a {
    automated DOM/opacity signals looked like a no-op, but a human eye
    watching it play sees this wipe clearly). Same background-clip:text
    technique as the very first version of this file, just with a
-   `transparent` stop instead of a lighter highlight color. */
+   `transparent` stop instead of a lighter highlight color.
+
+   A plain `transition` on background-position naturally plays in reverse
+   (right-to-left) when the mouse leaves mid-hover, which read as the
+   sweep going the wrong way -- using a one-shot @keyframes animation
+   instead means it always plays 0%->100% (left-to-right) on hover-in, and
+   just stops/resets on hover-out instead of visibly reversing. */
 .btn-shine {
   background-image: linear-gradient(90deg, #ffffff 0%, #ffffff 42%, transparent 50%, #ffffff 58%, #ffffff 100%);
   background-size: 250% 100%;
@@ -274,11 +280,15 @@ nav a {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: #ffffff;
-  transition: background-position 1.4s ease;
+}
+
+@keyframes btn-shine-sweep {
+  from { background-position: 0% 0; }
+  to { background-position: 100% 0; }
 }
 
 .btn:hover .btn-shine {
-  background-position: 100% 0;
+  animation: btn-shine-sweep 1.4s ease forwards;
 }
 
 /* Appended as a child of .btn by enhanceButtonSpotlight() (see the
