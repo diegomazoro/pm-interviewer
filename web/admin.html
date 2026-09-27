@@ -66,6 +66,17 @@
       </table>
     </div>
 
+    <h1>Paying users</h1>
+    <p class="hint" id="paying-count"></p>
+    <div class="pricing-table-wrap" style="margin-bottom:40px;">
+      <table class="admin-table" id="paying-table">
+        <thead>
+          <tr><th>Email</th><th>Interviews used</th><th>Premium since</th></tr>
+        </thead>
+        <tbody id="paying-body"></tbody>
+      </table>
+    </div>
+
     <h1>Interview history</h1>
     <div class="pricing-table-wrap">
       <table class="admin-table" id="history-table">
@@ -89,8 +100,10 @@
   const gateError = document.getElementById("gate-error");
   const dashboardError = document.getElementById("dashboard-error");
   const usersBody = document.getElementById("users-body");
+  const payingBody = document.getElementById("paying-body");
   const historyBody = document.getElementById("history-body");
   const usersCount = document.getElementById("users-count");
+  const payingCount = document.getElementById("paying-count");
 
   const STORAGE_KEY = "loudcase_admin_secret";
 
@@ -123,6 +136,18 @@
           </tr>
         `).join("")
       : `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No users yet.</td></tr>`;
+
+    const payingUsers = users.filter((u) => u.is_premium);
+    payingCount.textContent = `${payingUsers.length} paying user${payingUsers.length === 1 ? "" : "s"}`;
+    payingBody.innerHTML = payingUsers.length
+      ? payingUsers.map((u) => `
+          <tr>
+            <td style="text-align:left;">${u.email}</td>
+            <td>${u.interviews_used}</td>
+            <td>${fmtDate(u.premium_since)}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No paying users yet.</td></tr>`;
   }
 
   function renderHistory(entries) {

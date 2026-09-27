@@ -852,7 +852,8 @@ def submit_feedback(req: FeedbackRequest, user: dict = Depends(require_user)):
 def admin_list_users(_: None = Depends(require_admin)):
     conn = auth._get_conn()
     rows = conn.execute(
-        "SELECT id, email, is_premium, interviews_used, created_at FROM users ORDER BY created_at DESC"
+        "SELECT id, email, is_premium, interviews_used, created_at, premium_since "
+        "FROM users ORDER BY created_at DESC"
     ).fetchall()
     conn.close()
     return {"users": [dict(r) for r in rows]}

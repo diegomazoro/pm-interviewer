@@ -85,6 +85,12 @@ def init_db() -> None:
         conn.execute("ALTER TABLE users ADD COLUMN reset_token_hash TEXT")
     if "reset_token_expires" not in existing_cols:
         conn.execute("ALTER TABLE users ADD COLUMN reset_token_expires INTEGER")
+    if "premium_since" not in existing_cols:
+        # Nullable, and NOT backfilled for accounts that were already
+        # Premium before this column existed -- we have no record of their
+        # actual purchase date, so leaving it NULL ("--" in the admin
+        # dashboard) is more honest than guessing "today".
+        conn.execute("ALTER TABLE users ADD COLUMN premium_since INTEGER")
 
     # One row per scored interview (i.e. one row per successful /evaluate
     # call), regardless of plan -- this is both the free-tier usage counter
@@ -276,15 +282,24 @@ def get_billing_status(user_id: int) -> dict:
 
 
 def set_premium(user_id: int) -> None:
+    # COALESCE keeps the original premium_since if this fires more than
+    # once for the same user (e.g. a duplicate Stripe webhook delivery)
+    # instead of bumping it to "now" on every retry.
     conn = _get_conn()
-    conn.execute("UPDATE users SET is_premium = 1 WHERE id = ?", (user_id,))
+    conn.execute(
+        "UPDATE users SET is_premium = 1, premium_since = COALESCE(premium_since, ?) WHERE id = ?",
+        (int(time.time()), user_id),
+    )
     conn.commit()
     conn.close()
 
 
 def set_premium_by_email(email: str) -> None:
     conn = _get_conn()
-    cursor = conn.execute("UPDATE users SET is_premium = 1 WHERE email = ?", (_normalize_email(email),))
+    cursor = conn.execute(
+        "UPDATE users SET is_premium = 1, premium_since = COALESCE(premium_since, ?) WHERE email = ?",
+        (int(time.time()), _normalize_email(email)),
+    )
     conn.commit()
     conn.close()
     if cursor.rowcount == 0:
