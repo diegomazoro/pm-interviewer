@@ -44,10 +44,10 @@
 
 <div class="wrap">
   <h1>My interviews</h1>
-  <p style="color: var(--text-muted)">Every scored interview you've run. Your first two come with full feedback -- after that, upgrade to Premium to unlock detailed feedback on the rest.</p>
+  <p style="color: var(--text-muted)">Every scored interview you've run. Your first two come with full feedback, after that, upgrade to Premium to unlock detailed feedback on the rest.</p>
 
   <div id="history-list" style="margin-top:24px; display:flex; flex-direction:column; gap:16px;"></div>
-  <p id="empty-msg" style="display:none; color: var(--text-muted);">No scored interviews yet -- head to a case and finish one to see it here.</p>
+  <p id="empty-msg" style="display:none; color: var(--text-muted);">No scored interviews yet. Head to a case and finish one to see it here.</p>
 </div>
 
 <div class="modal-overlay" id="feedback-modal" style="display:none;">
@@ -269,7 +269,7 @@
         submitBtn.disabled = false;
         return;
       }
-      status.textContent = "Thanks -- we got it!";
+      status.textContent = "Thanks, we got it!";
       submitBtn.disabled = false;
       setTimeout(closeFeedbackModal, 1200);
     } catch (err) {
