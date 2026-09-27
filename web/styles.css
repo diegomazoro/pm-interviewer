@@ -259,9 +259,9 @@ nav a {
   max-width: 480px;
 }
 
-.hero-trust {
+.hero p.hero-trust {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 6.5px;
   margin: 14px 0 0;
 }
 
