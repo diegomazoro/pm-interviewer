@@ -193,6 +193,41 @@ def login(req: LoginRequest):
     return {"token": token, "email": user["email"]}
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+    # Full URL of the frontend's reset-password page, e.g.
+    # "https://www.loudcase.xyz/reset-password.html" -- passed by the
+    # browser (same pattern as success_url/cancel_url in
+    # /billing/create-checkout-session) so the backend never has to
+    # hardcode or guess which frontend domain is calling it.
+    reset_base_url: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+@app.post("/auth/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    token = auth.create_password_reset_token(req.email)
+    if token:
+        reset_link = f"{req.reset_base_url}?token={token}"
+        email_alerts.send_password_reset_email(req.email, reset_link)
+    # Same response whether or not the email is registered -- otherwise
+    # this endpoint could be used to check which emails have an account.
+    return {"message": "If an account exists for that email, we've sent a password reset link."}
+
+
+@app.post("/auth/reset-password")
+def reset_password(req: ResetPasswordRequest):
+    try:
+        auth.reset_password_with_token(req.token, req.new_password)
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"message": "Your password has been updated."}
+
+
 # ---- OpenAI-compatible chat completions ----
 #
 # NOTE: this endpoint deliberately does NOT use a strict Pydantic request

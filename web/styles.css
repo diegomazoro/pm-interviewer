@@ -747,7 +747,9 @@ nav a {
   margin-top: 16px;
 }
 
-.auth-card .hint a {
+.auth-card .hint a,
+.auth-form-inner .hint a,
+.auth-footer a {
   color: var(--accent);
 }
 

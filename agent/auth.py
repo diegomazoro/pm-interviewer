@@ -8,13 +8,14 @@ browser on signup/login. The browser stores the JWT in localStorage and
 sends it back as `Authorization: Bearer <token>` on requests that should
 require a logged-in user (currently: /evaluate).
 
-No email-sending is wired up here (no verification email, no password
-reset email yet) -- that needs a transactional email provider (e.g.
-Resend) and a bit more plumbing, and can be added as a follow-up once
-basic login is working end-to-end.
+No signup-verification email is wired up here, but password reset is:
+create_password_reset_token()/reset_password_with_token() below, sent via
+the Gmail SMTP setup in email_alerts.py.
 """
+import hashlib
 import os
 import re
+import secrets
 import sqlite3
 import time
 from pathlib import Path
@@ -55,6 +56,8 @@ FREE_INTERVIEW_LIMIT = 2
 # voice/LLM costs, not to be advertised or shown in the pricing table.
 PREMIUM_INTERVIEW_LIMIT = 50
 
+RESET_TOKEN_TTL_SECONDS = 60 * 60  # 1 hour
+
 
 def init_db() -> None:
     conn = sqlite3.connect(DB_PATH)
@@ -78,6 +81,10 @@ def init_db() -> None:
         conn.execute("ALTER TABLE users ADD COLUMN is_premium INTEGER NOT NULL DEFAULT 0")
     if "interviews_used" not in existing_cols:
         conn.execute("ALTER TABLE users ADD COLUMN interviews_used INTEGER NOT NULL DEFAULT 0")
+    if "reset_token_hash" not in existing_cols:
+        conn.execute("ALTER TABLE users ADD COLUMN reset_token_hash TEXT")
+    if "reset_token_expires" not in existing_cols:
+        conn.execute("ALTER TABLE users ADD COLUMN reset_token_expires INTEGER")
 
     # One row per scored interview (i.e. one row per successful /evaluate
     # call), regardless of plan -- this is both the free-tier usage counter
@@ -171,6 +178,54 @@ def verify_login(email: str, password: str) -> dict:
         raise invalid
 
     return {"id": row["id"], "email": row["email"]}
+
+
+def _hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def create_password_reset_token(email: str) -> Optional[str]:
+    """Returns a raw, one-time reset token if `email` matches an account,
+    else None. Only the token's hash is persisted (like a password), so
+    reading the database doesn't hand you a usable token. Callers must
+    return the same response to the browser either way -- otherwise this
+    becomes a way to check which emails have an account."""
+    email = _normalize_email(email)
+    conn = _get_conn()
+    row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+    if row is None:
+        conn.close()
+        return None
+    token = secrets.token_urlsafe(32)
+    conn.execute(
+        "UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?",
+        (_hash_reset_token(token), int(time.time()) + RESET_TOKEN_TTL_SECONDS, row["id"]),
+    )
+    conn.commit()
+    conn.close()
+    return token
+
+
+def reset_password_with_token(token: str, new_password: str) -> None:
+    if len(new_password) < 8:
+        raise AuthError("Password must be at least 8 characters.")
+
+    conn = _get_conn()
+    row = conn.execute(
+        "SELECT id, reset_token_expires FROM users WHERE reset_token_hash = ?",
+        (_hash_reset_token(token),),
+    ).fetchone()
+    if row is None or row["reset_token_expires"] is None or row["reset_token_expires"] < int(time.time()):
+        conn.close()
+        raise AuthError("This reset link is invalid or has expired.")
+
+    password_hash = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    conn.execute(
+        "UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?",
+        (password_hash, row["id"]),
+    )
+    conn.commit()
+    conn.close()
 
 
 def issue_token(user_id: int, email: str) -> str:
