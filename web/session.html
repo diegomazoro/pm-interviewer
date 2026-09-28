@@ -31,10 +31,15 @@
         <text x="47" y="18" dominant-baseline="central" text-anchor="start" font-family="Bricolage Grotesque, sans-serif" font-weight="400" font-size="26" textLength="120" lengthAdjust="spacingAndGlyphs" fill="url(#logoGrad)">Loudcase</text>
       </svg>
     </a>
-  <div style="display:flex; align-items:center; gap:16px;">
-    <button type="button" id="feedback-fab" style="background:none; border:1px solid var(--accent); color: var(--accent); font-size:14px; font-family:inherit; cursor:pointer; padding:6px 14px; border-radius:999px;">Feedback?</button>
-    <span id="nav-email" style="color: var(--text-muted); font-size: 14px;"></span>
-    <a href="#" id="logout-link" class="btn secondary" style="padding:8px 16px;font-size:14px;">Log out</a>
+  <button type="button" class="nav-burger" id="nav-burger" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-menu" id="nav-menu">
+    <div class="nav-actions">
+      <button type="button" id="feedback-fab" style="background:none; border:1px solid var(--accent); color: var(--accent); font-size:14px; font-family:inherit; cursor:pointer; padding:6px 14px; border-radius:999px;">Feedback?</button>
+      <span id="nav-email" style="color: var(--text-muted); font-size: 14px;"></span>
+      <a href="#" id="logout-link" class="btn secondary" style="padding:8px 16px;font-size:14px;">Log out</a>
+    </div>
   </div>
 </nav>
 
