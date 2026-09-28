@@ -571,10 +571,6 @@ nav a {
     margin-right: auto;
   }
 
-  .hero-visual {
-    order: -1;
-  }
-
   .call-card {
     max-width: 340px;
   }
