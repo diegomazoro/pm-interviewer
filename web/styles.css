@@ -809,6 +809,22 @@ nav a {
   flex-grow: 1;
 }
 
+/* Small, scoped tweaks to the landing page's "See what real feedback
+   looks like" sample card only -- .sample-feedback-card is combined
+   with .case-card rather than changing .case-card itself, since that
+   class is also used for the real case grid on practice.html, and
+   .rendered-feedback is also used by the real feedback modal on
+   history.html. Neither of those should be affected. */
+.case-card.sample-feedback-card {
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+}
+
+.sample-feedback-card .rendered-feedback li strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
 .auth-card {
   max-width: 380px;
   margin: 48px auto 0;
