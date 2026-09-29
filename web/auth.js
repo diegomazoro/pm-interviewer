@@ -48,17 +48,21 @@ function wireAccountNav() {
   const burger = document.getElementById("nav-burger");
   const menu = document.getElementById("nav-menu");
   if (burger && menu) {
-    burger.addEventListener("click", () => {
-      const isOpen = menu.classList.toggle("open");
+    // "nav-menu-open" on <body> locks background scroll while the
+    // full-screen menu is open (see styles.css) -- otherwise scrolling
+    // behind it could bring page content into view past its bottom edge.
+    const setOpen = (isOpen) => {
+      menu.classList.toggle("open", isOpen);
       burger.setAttribute("aria-expanded", String(isOpen));
+      document.body.classList.toggle("nav-menu-open", isOpen);
+    };
+    burger.addEventListener("click", () => {
+      setOpen(!menu.classList.contains("open"));
     });
     // Close the menu after tapping a link/button inside it, so it doesn't
     // stay open over the next page/action.
     menu.addEventListener("click", (e) => {
-      if (e.target.closest("a, button")) {
-        menu.classList.remove("open");
-        burger.setAttribute("aria-expanded", "false");
-      }
+      if (e.target.closest("a, button")) setOpen(false);
     });
   }
 }
