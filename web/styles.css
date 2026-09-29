@@ -1428,19 +1428,11 @@ pre.scorecard {
   border-radius: var(--radius);
 }
 
-/* Hidden on desktop, where the table already fits without scrolling
-   (see the media query below). */
-.pricing-scroll-hint {
-  display: none;
-}
-
+/* Fade at the right edge hints that a horizontally-scrolling table (this
+   class is shared with the admin dashboard's tables) has more content
+   off-screen. Harmless on a table that fits without scrolling (nothing
+   to fade against), so left unscoped. */
 @media (max-width: 700px) {
-  /* The table is wider than the screen on mobile (min-width: 560px vs.
-     a ~340-400px viewport), so it scrolls horizontally inside
-     .pricing-table-wrap -- but with nothing cut off cleanly at the
-     right edge, there was no visual cue that the Premium column (the
-     "Best value" one!) was sitting just off-screen. This fade + hint
-     make that swipeable state discoverable. */
   .pricing-table-wrap::after {
     content: "";
     position: absolute;
@@ -1451,14 +1443,68 @@ pre.scorecard {
     background: linear-gradient(90deg, transparent, var(--surface));
     pointer-events: none;
   }
+}
 
-  .pricing-scroll-hint {
-    display: block;
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin: 8px 0 0;
+/* ---- Mobile pricing cards ----
+   On the landing page specifically (scoped to #pricing so this doesn't
+   touch the admin dashboard's reuse of .pricing-table-wrap), the table
+   is swapped for two stacked cards below the breakpoint -- a
+   horizontally-scrolling table hid the Premium column off-screen
+   entirely, which isn't an acceptable way to present the plan people are
+   actually meant to buy. */
+.pricing-cards {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  #pricing .pricing-table-wrap {
+    display: none;
   }
+
+  #pricing .pricing-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.pricing-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+}
+
+.pricing-card.premium-col {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+
+.pricing-card .pricing-badge {
+  margin-bottom: 8px;
+}
+
+.pricing-card-features {
+  list-style: none;
+  margin: 20px 0 24px;
+  padding: 0;
+  text-align: left;
+}
+
+.pricing-card-features li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px dotted var(--border);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.pricing-card-features li:last-child {
+  border-bottom: none;
 }
 
 .pricing-table {

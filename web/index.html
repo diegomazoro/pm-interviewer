@@ -234,14 +234,50 @@
           <td class="pricing-table-label"></td>
           <td><a class="btn secondary" href="practice.html" style="width:100%; text-align:center; box-sizing:border-box; display:block;">Start free</a></td>
           <td class="premium-col">
-            <button class="btn" id="get-premium-btn" style="width:100%; box-sizing:border-box; display:block;"><span class="btn-shine">Get Premium</span></button>
-            <p class="pricing-error" id="premium-error" style="display:none;"></p>
+            <button class="btn get-premium-btn" type="button" style="width:100%; box-sizing:border-box; display:block;"><span class="btn-shine">Get Premium</span></button>
+            <p class="pricing-error" style="display:none;"></p>
           </td>
         </tr>
       </tfoot>
     </table>
   </div>
-  <p class="pricing-scroll-hint">Swipe to see Premium &rarr;</p>
+
+  <!-- Mobile-only equivalent of the table above: below the breakpoint a
+       horizontally-scrolling table hid the Premium column off-screen with
+       no visual cue, so both plans are shown here as stacked cards
+       instead -- see the pricing-table-wrap / pricing-cards toggle in
+       styles.css. Content is duplicated (not generated from the table)
+       to keep this a plain content change, matching how nav/markup is
+       already duplicated per page elsewhere on the site; keep the two in
+       sync if pricing/features change. -->
+  <div class="pricing-cards">
+    <div class="pricing-card">
+      <div class="pricing-col-head">Free</div>
+      <div class="pricing-col-price">$0</div>
+      <ul class="pricing-card-features">
+        <li><span>Live case interviews</span><span>2 interviews</span></li>
+        <li><span>Access to new cases &amp; interview updates</span><span class="pricing-check" aria-label="Included"></span></li>
+        <li><span>Score after each interview</span><span class="pricing-check" aria-label="Included"></span></li>
+        <li><span>Detailed feedback from the interviewer</span><span class="pricing-check" aria-label="Included"></span></li>
+        <li><span>History of past scores &amp; feedback</span><span class="pricing-dash" aria-label="Not included"></span></li>
+      </ul>
+      <a class="btn secondary" href="practice.html" style="width:100%; text-align:center; box-sizing:border-box; display:block;">Start free</a>
+    </div>
+    <div class="pricing-card premium-col">
+      <span class="pricing-badge">Best value</span>
+      <div class="pricing-col-head">Premium</div>
+      <div class="pricing-col-price">$150<span class="pricing-period">one-time</span></div>
+      <ul class="pricing-card-features">
+        <li><span>Live case interviews</span><span>Unlimited</span></li>
+        <li><span>Access to new cases &amp; interview updates</span><span class="pricing-check" aria-label="Included"></span></li>
+        <li><span>Score after each interview</span><span class="pricing-check" aria-label="Included"></span></li>
+        <li><span>Detailed feedback from the interviewer</span><span class="pricing-check" aria-label="Included"></span></li>
+        <li><span>History of past scores &amp; feedback</span><span class="pricing-check" aria-label="Included"></span></li>
+      </ul>
+      <button class="btn get-premium-btn" type="button" style="width:100%; box-sizing:border-box; display:block;"><span class="btn-shine">Get Premium</span></button>
+      <p class="pricing-error" style="display:none;"></p>
+    </div>
+  </div>
 </div>
 
 <div class="wrap">
@@ -286,41 +322,48 @@
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script>
-  document.getElementById("get-premium-btn").addEventListener("click", async () => {
-    const errorMsg = document.getElementById("premium-error");
-    errorMsg.style.display = "none";
+  // Two "Get Premium" buttons exist (the desktop table's footer cell and
+  // the mobile card, only one of which is ever visible at a time -- see
+  // .pricing-table-wrap / .pricing-cards in styles.css), each followed by
+  // its own .pricing-error paragraph, so wire up whichever one was
+  // actually clicked rather than assuming a single element by id.
+  document.querySelectorAll(".get-premium-btn").forEach((btn) => {
+    const errorMsg = btn.nextElementSibling;
+    btn.addEventListener("click", async () => {
+      errorMsg.style.display = "none";
 
-    // Buying Premium requires an account, so payment is tied to it.
-    // Not logged in -- send to login, then bounce straight back here.
-    if (!localStorage.getItem("loudcase_token")) {
-      window.location.href = "login.html?next=" + encodeURIComponent("index.html#pricing");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${CONFIG.backendUrl}/billing/create-checkout-session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader() },
-        body: JSON.stringify({
-          success_url: window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "premium-success.html",
-          cancel_url: window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "index.html#pricing",
-        }),
-      });
-      if (res.status === 401) {
+      // Buying Premium requires an account, so payment is tied to it.
+      // Not logged in -- send to login, then bounce straight back here.
+      if (!localStorage.getItem("loudcase_token")) {
         window.location.href = "login.html?next=" + encodeURIComponent("index.html#pricing");
         return;
       }
-      const data = await res.json();
-      if (!res.ok) {
-        errorMsg.textContent = data.detail || "Something went wrong starting checkout.";
+
+      try {
+        const res = await fetch(`${CONFIG.backendUrl}/billing/create-checkout-session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeader() },
+          body: JSON.stringify({
+            success_url: window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "premium-success.html",
+            cancel_url: window.location.origin + window.location.pathname.replace(/index\.html$/, "") + "index.html#pricing",
+          }),
+        });
+        if (res.status === 401) {
+          window.location.href = "login.html?next=" + encodeURIComponent("index.html#pricing");
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) {
+          errorMsg.textContent = data.detail || "Something went wrong starting checkout.";
+          errorMsg.style.display = "block";
+          return;
+        }
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      } catch (err) {
+        errorMsg.textContent = `Request failed: ${err}`;
         errorMsg.style.display = "block";
-        return;
       }
-      window.open(data.url, "_blank", "noopener,noreferrer");
-    } catch (err) {
-      errorMsg.textContent = `Request failed: ${err}`;
-      errorMsg.style.display = "block";
-    }
+    });
   });
 </script>
 <script>
