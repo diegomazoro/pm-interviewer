@@ -820,9 +820,19 @@ nav a {
   border: 1px solid var(--accent);
 }
 
-.sample-feedback-card .rendered-feedback li strong {
-  display: block;
+.sample-feedback-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 2px;
+}
+
+.sample-feedback-score {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .auth-card {
