@@ -243,12 +243,34 @@ nav a {
   animation: marquee-scroll 52s linear infinite;
 }
 
-.logo-track span {
-  font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-weight: 700;
-  font-size: 24px;
-  white-space: nowrap;
-  color: var(--text-muted);
+/* Logos are fetched as-is (whatever colors/fills the source SVG uses)
+   and forced to a flat white silhouette with this filter -- brightness(0)
+   crushes every visible pixel to black regardless of original fill
+   color, invert(1) flips that to white, and the SVG's own transparency
+   is preserved throughout. Much more robust than trying to recolor each
+   logo's internal path fills by hand. Opacity keeps them at roughly the
+   same visual weight the plain-text company names had (color:
+   var(--text-muted)) rather than full-brightness white competing with
+   the page's actual content. */
+.logo-marquee-icon {
+  height: 24px;
+  width: auto;
+  flex-shrink: 0;
+  filter: brightness(0) invert(1);
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.logo-marquee-icon:hover {
+  opacity: 0.9;
+}
+
+/* Wordmark logos read as noticeably smaller than icon-only marks at the
+   same height, since most of their box is whitespace either side of
+   thin letterforms -- bumped up so it doesn't look like a rendering
+   error next to the icon marks. */
+.logo-marquee-icon-wide {
+  height: 30px;
 }
 
 @keyframes marquee-scroll {
