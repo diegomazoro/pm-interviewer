@@ -834,6 +834,24 @@ nav a {
   flex-shrink: 0;
 }
 
+/* Higher specificity than .rendered-feedback p (element+class) so this
+   reliably wins regardless of source order, rather than depending on
+   this block staying after it in the file. */
+.rendered-feedback p.sample-feedback-total {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sample-feedback-total-value {
+  font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 20px;
+}
+
 .auth-card {
   max-width: 380px;
   margin: 48px auto 0;
