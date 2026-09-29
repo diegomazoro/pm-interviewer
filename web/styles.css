@@ -558,7 +558,12 @@ nav a {
   .hero-split {
     grid-template-columns: 1fr;
     text-align: center;
-    padding: 48px 0 40px;
+    /* Sits inside .wrap, which already contributes 48px of padding-top --
+       stacking this on top of that made the gap above the kicker text
+       (96px total) read as too much space on mobile. Zeroed here so
+       .wrap's 48px is the only top gap, matching the spacing used above
+       every other section on the page. */
+    padding: 0 0 40px;
     gap: 40px;
   }
 
