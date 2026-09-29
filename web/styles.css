@@ -255,6 +255,13 @@ nav a {
 .logo-marquee-icon {
   height: 24px;
   width: auto;
+  /* Full wordmark logos (e.g. Anthropic's, ~9:1 aspect ratio) would
+     otherwise render nearly 5x wider than an icon-only mark at the same
+     height, dominating the row -- object-fit: contain lets max-width
+     shrink those proportionally (reducing effective height too) instead
+     of letting any single logo overwhelm its neighbors. */
+  max-width: 110px;
+  object-fit: contain;
   flex-shrink: 0;
   filter: brightness(0) invert(1);
   opacity: 0.55;
