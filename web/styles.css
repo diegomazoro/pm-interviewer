@@ -101,6 +101,28 @@ nav a {
   margin-left: auto;
 }
 
+/* "Premium" pill next to the nav email -- added by wirePremiumBadge() in
+   auth.js for Premium accounts only. */
+.premium-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.premium-badge[hidden] {
+  display: none;
+}
+
 .nav-burger {
   display: none;
   flex-direction: column;

@@ -19,6 +19,7 @@ function currentUserEmail() {
 function logout() {
   localStorage.removeItem("loudcase_token");
   localStorage.removeItem("loudcase_email");
+  localStorage.removeItem("loudcase_premium_email");
   window.location.href = "login.html";
 }
 
@@ -36,7 +37,10 @@ function authHeader() {
 // screen the way a plain desktop nav would.
 function wireAccountNav() {
   const emailEl = document.getElementById("nav-email");
-  if (emailEl) emailEl.textContent = currentUserEmail() || "";
+  if (emailEl) {
+    emailEl.textContent = currentUserEmail() || "";
+    wirePremiumBadge(emailEl);
+  }
   const logoutLink = document.getElementById("logout-link");
   if (logoutLink) {
     logoutLink.addEventListener("click", (e) => {
@@ -65,4 +69,42 @@ function wireAccountNav() {
       if (e.target.closest("a, button")) setOpen(false);
     });
   }
+}
+
+// Shows a "Premium" pill right after the nav email for Premium accounts.
+// It's appended INSIDE #nav-email so it stays beside the address even in
+// the mobile menu, where .nav-actions stacks its children vertically.
+// The last known status is cached in localStorage, keyed to the email it
+// belongs to (so another account logging in on the same browser never
+// inherits it), so the badge appears instantly on load; /billing/status
+// then confirms or corrects it.
+function wirePremiumBadge(emailEl) {
+  const email = currentUserEmail();
+  if (!email) return;
+
+  const badge = document.createElement("span");
+  badge.className = "premium-badge";
+  badge.textContent = "Premium";
+  badge.hidden = true;
+  emailEl.appendChild(badge);
+
+  const show = (isPremium) => {
+    badge.hidden = !isPremium;
+    try {
+      if (isPremium) localStorage.setItem("loudcase_premium_email", email);
+      else localStorage.removeItem("loudcase_premium_email");
+    } catch (_) {}
+  };
+
+  try {
+    if (localStorage.getItem("loudcase_premium_email") === email) badge.hidden = false;
+  } catch (_) {}
+
+  if (typeof CONFIG === "undefined") return;
+  fetch(`${CONFIG.backendUrl}/billing/status`, { headers: authHeader() })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data) show(Boolean(data.is_premium));
+    })
+    .catch(() => {});
 }
