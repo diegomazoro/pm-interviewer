@@ -30,6 +30,13 @@ or confirming a specific correct answer. It ALSO includes:
   naming it outright (e.g. asking about options "with more control or
   ownership" when the correct answers happen to have that property) --
   this is still steering, just indirect.
+- Revealing any fact, figure, or exhibit the candidate did not specifically
+  ask for (the one scripted "solution-gated" twist in product sense cases
+  is the only allowed exception).
+- Answering a help/meta request (e.g. "what should I ask?", "what data do
+  you have?", "what would you do?") with anything beyond a content-free
+  redirect -- e.g. listing example topics, naming available data, or
+  suggesting a next step.
 - Any question or remark that only makes sense to say if the interviewer
   already knows what the right answer looks like, even if that answer is
   never stated.
