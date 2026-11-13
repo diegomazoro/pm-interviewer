@@ -53,10 +53,11 @@
 
   <div class="filter-bar" id="filter-bar">
     <button type="button" class="filter-chip active" data-filter="all">All</button>
-    <button type="button" class="filter-chip" data-filter="product sense">Product sense</button>
-    <button type="button" class="filter-chip" data-filter="business sense">Business sense</button>
-    <button type="button" class="filter-chip" data-filter="problem solving">Problem solving</button>
-    <button type="button" class="filter-chip" data-filter="analytical">Analytical</button>
+    <button type="button" class="filter-chip" data-filter="Diagnosis">Diagnosis</button>
+    <button type="button" class="filter-chip" data-filter="Product Sense">Product sense</button>
+    <button type="button" class="filter-chip" data-filter="Prioritization">Prioritization</button>
+    <button type="button" class="filter-chip" data-filter="Metrics &amp; Experiments">Metrics &amp; experiments</button>
+    <button type="button" class="filter-chip" data-filter="Strategy &amp; Growth">Strategy &amp; growth</button>
   </div>
 
   <div class="case-grid" id="case-grid"></div>
@@ -73,23 +74,45 @@
   const filterBar = document.getElementById("filter-bar");
   let activeFilter = "all";
 
+  // One card per company, listing that company's cases in a fixed skill
+  // order. Companies keep the order they first appear in CONFIG.cases.
+  // The skill filter hides non-matching cases, and any company left with
+  // none.
+  const SKILL_ORDER = ["Diagnosis", "Product Sense", "Prioritization", "Metrics & Experiments", "Strategy & Growth"];
+
   function renderCases() {
     grid.innerHTML = "";
+    const companies = new Map();
     CONFIG.cases
-      .filter((c) => activeFilter === "all" || c.type.toLowerCase() === activeFilter)
+      .filter((c) => activeFilter === "all" || c.skill === activeFilter)
       .forEach((c) => {
-        const card = document.createElement("div");
-        card.className = "case-card";
-        card.innerHTML = `
-          <div class="case-card-head">
-            <span class="badge">${c.type}</span>
-          </div>
-          <h3>${c.title}</h3>
-          <p>${c.subtitle}</p>
-          <a class="btn" href="session.html?case=${encodeURIComponent(c.id)}">Start case</a>
-        `;
-        grid.appendChild(card);
+        if (!companies.has(c.title)) companies.set(c.title, []);
+        companies.get(c.title).push(c);
       });
+
+    companies.forEach((cases, company) => {
+      cases.sort((a, b) => SKILL_ORDER.indexOf(a.skill) - SKILL_ORDER.indexOf(b.skill));
+      const card = document.createElement("div");
+      card.className = "case-card company-card";
+      card.innerHTML = `
+        <div class="case-card-head">
+          <h3>${company}</h3>
+          <span class="company-case-count">${cases.length} ${cases.length === 1 ? "case" : "cases"}</span>
+        </div>
+        <ul class="company-case-list">
+          ${cases.map((c) => `
+            <li class="company-case">
+              <div class="company-case-text">
+                <span class="badge">${c.skill}</span>
+                <p>${c.subtitle}</p>
+              </div>
+              <a class="btn" href="session.html?case=${encodeURIComponent(c.id)}">Start</a>
+            </li>
+          `).join("")}
+        </ul>
+      `;
+      grid.appendChild(card);
+    });
   }
 
   filterBar.querySelectorAll(".filter-chip").forEach((btn) => {
