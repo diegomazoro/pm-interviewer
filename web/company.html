@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=202611142229">
+<link rel="stylesheet" href="styles.css?v=202611142235">
 </head>
 <body>
 <nav>
@@ -62,7 +62,7 @@
 
   <div id="company-content" style="display:none;">
     <div class="company-header">
-      <span class="case-icon case-icon-lg" id="company-icon" aria-hidden="true"></span>
+      <span id="company-icon"></span>
       <div>
         <h1 id="company-name"></h1>
         <p id="company-tagline"></p>
@@ -73,9 +73,9 @@
   </div>
 </div>
 
-<script src="config.js?v=202611142229"></script>
-<script src="catalog.js?v=202611142229"></script>
-<script src="auth.js?v=202611142229"></script>
+<script src="config.js?v=202611142235"></script>
+<script src="catalog.js?v=202611142235"></script>
+<script src="auth.js?v=202611142235"></script>
 <script>
   if (!requireLogin()) {
     // requireLogin() already redirected to login.html
@@ -87,7 +87,7 @@
     document.getElementById("company-not-found").style.display = "block";
   } else {
     document.title = `${co.name} cases — Loudcase`;
-    document.getElementById("company-icon").textContent = co.name.charAt(0);
+    document.getElementById("company-icon").outerHTML = companyIconHtml(co.name, "lg");
     document.getElementById("company-name").textContent = co.name;
     document.getElementById("company-tagline").textContent = co.tagline;
     document.getElementById("company-intro").textContent =

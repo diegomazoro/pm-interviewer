@@ -30,6 +30,25 @@ const COMPANY_TAGLINES = {
   "Nubank": "Digital banking in Latin America",
 };
 
+// Companies with a brand icon in assets/company-icons/<slug>.svg (see the
+// README there). Others fall back to a letter monogram.
+const COMPANY_ICONS = new Set([
+  "figma", "notion", "revolut", "stripe", "linear", "anthropic",
+  "openai", "google", "meta", "netflix", "amazon", "nubank",
+]);
+
+// Icon for a company: its logo on a dark tile, or the letter monogram.
+// `size` is "" (cards) or "lg" (company page header).
+function companyIconHtml(name, size = "") {
+  const slug = companySlug(name);
+  const lg = size === "lg" ? " company-logo-lg" : "";
+  if (COMPANY_ICONS.has(slug)) {
+    return `<span class="company-logo${lg}" aria-hidden="true"><img src="assets/company-icons/${slug}.svg" alt=""></span>`;
+  }
+  const monoLg = size === "lg" ? " case-icon-lg" : "";
+  return `<span class="case-icon${monoLg}" aria-hidden="true">${escapeHtml(name.charAt(0))}</span>`;
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }

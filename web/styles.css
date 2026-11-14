@@ -912,6 +912,57 @@ nav a {
   gap: 12px;
 }
 
+/* Brand icon on a dark rounded tile -- same footprint as the .case-icon
+   letter monogram used as a fallback, so cards line up either way. */
+.company-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.company-logo img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.company-logo-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+}
+
+.company-logo-lg img {
+  width: 28px;
+  height: 28px;
+}
+
+/* Letter monogram fallback, styled like the logo tiles so companies
+   without an icon don't stand out in the grid. */
+.company-tile-head .case-icon,
+.company-header .case-icon-lg {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.company-header .case-icon-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  font-size: 24px;
+}
+
 .company-tile-head h3 {
   margin: 0;
   font-size: 18px;
