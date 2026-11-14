@@ -368,6 +368,22 @@ async def chat_completions(
     case_id: Optional[str] = Query(None, description="Which case file to run -- e.g. case_04_pm_satisfaction_drop_figma. Optional if elevenlabs_extra_body.case_id is provided instead."),
     session_id: Optional[str] = Query(None, description="Optional session id, for naming the saved transcript file"),
 ):
+    # This endpoint calls Claude on every request, so it must only accept
+    # calls from our ElevenLabs Agent -- otherwise anyone who finds the URL
+    # could run up the Anthropic bill. The Agent's custom-LLM "API key"
+    # secret is sent as `Authorization: Bearer <key>` (OpenAI-compatible
+    # client); set the same value as CUSTOM_LLM_SECRET on the server.
+    # If CUSTOM_LLM_SECRET isn't set yet, requests are allowed (with a
+    # warning) so turning this on never breaks live calls mid-setup.
+    expected_secret = os.environ.get("CUSTOM_LLM_SECRET")
+    if expected_secret:
+        auth_header = request.headers.get("authorization", "")
+        provided = auth_header[len("Bearer "):].strip() if auth_header.startswith("Bearer ") else ""
+        if not provided or not hmac.compare_digest(provided, expected_secret):
+            raise HTTPException(status_code=401, detail="Invalid or missing API key.")
+    else:
+        logger.warning("chat_completions: CUSTOM_LLM_SECRET is not set -- endpoint is open to anyone with the URL.")
+
     try:
         body = await request.json()
     except Exception as exc:
