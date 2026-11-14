@@ -13,6 +13,7 @@ create_password_reset_token()/reset_password_with_token() below, sent via
 the Gmail SMTP setup in email_alerts.py.
 """
 import hashlib
+import logging
 import os
 import re
 import secrets
@@ -23,6 +24,8 @@ from typing import Optional
 
 import bcrypt
 import jwt
+
+logger = logging.getLogger("uvicorn.error")
 
 BASE_DIR = Path(__file__).parent
 
@@ -48,7 +51,10 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 # OAuth client ID from Google Cloud Console (Credentials -> OAuth client ID,
 # type "Web application"). Set it on Railway; the same value goes in
 # web/config.js as googleClientId. Google sign-in is disabled until it's set.
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+# Stripped of whitespace and quotes: a value pasted into a dashboard with a
+# trailing space or surrounding quotes would otherwise never match the
+# token's audience, and every Google sign-in would fail.
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip().strip("\"'")
 
 # Stored in password_hash for accounts created through Google sign-in, which
 # have no password. It's not a valid bcrypt hash, so verify_login() checks
@@ -219,8 +225,17 @@ def login_with_google(credential: str) -> dict:
     try:
         # Checks the signature against Google's public keys, the expiry, the
         # issuer, and that the token was issued for OUR client ID (audience).
-        claims = id_token.verify_oauth2_token(credential, google_requests.Request(), GOOGLE_CLIENT_ID)
-    except ValueError:
+        # clock_skew_in_seconds: Google's token can be issued a second or so
+        # "ahead" of this server's clock; with the library's default of 0
+        # that fails as "Token used too early".
+        claims = id_token.verify_oauth2_token(
+            credential, google_requests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=10
+        )
+    except ValueError as exc:
+        # The library's message says exactly what failed (wrong audience,
+        # expired, bad signature...) -- log it, but keep the user-facing
+        # message generic.
+        logger.warning("Google sign-in rejected: %s", exc)
         raise AuthError("Google sign-in failed. Please try again.")
 
     if not claims.get("email") or not claims.get("email_verified"):
