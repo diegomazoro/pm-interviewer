@@ -35,7 +35,7 @@ const CONFIG = {
   // Google sign-in: the OAuth client ID from Google Cloud Console (it's
   // public, not a secret). Must match GOOGLE_CLIENT_ID on the backend.
   // Leave empty to hide the "Continue with Google" button.
-  googleClientId: "",
+  googleClientId: "13161874600-468h5h4g0lbdrh0vahf625fith1om915.apps.googleusercontent.com",
 
   cases: [
     {
