@@ -1084,6 +1084,31 @@ nav a {
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
 
+/* "Continue with Google" button (rendered by Google's script into this
+   container) and the "or" divider above the email form -- login.html. */
+.google-signin-btn {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .auth-form-inner form {
   display: flex;
   flex-direction: column;

@@ -45,6 +45,16 @@ JWT_TTL_SECONDS = 60 * 60 * 24 * 30  # 30 days -- this is a practice tool, not a
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+# OAuth client ID from Google Cloud Console (Credentials -> OAuth client ID,
+# type "Web application"). Set it on Railway; the same value goes in
+# web/config.js as googleClientId. Google sign-in is disabled until it's set.
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+
+# Stored in password_hash for accounts created through Google sign-in, which
+# have no password. It's not a valid bcrypt hash, so verify_login() checks
+# for it explicitly instead of passing it to bcrypt (which would raise).
+NO_PASSWORD_SENTINEL = "!google-sign-in"
+
 
 FREE_INTERVIEW_LIMIT = 2
 
@@ -180,10 +190,60 @@ def verify_login(email: str, password: str) -> dict:
     invalid = AuthError("Incorrect email or password.")
     if row is None:
         raise invalid
+    if row["password_hash"] == NO_PASSWORD_SENTINEL:
+        raise AuthError("This account uses Google sign-in. Click \"Continue with Google\" to log in.")
     if not bcrypt.checkpw(password.encode("utf-8"), row["password_hash"].encode("utf-8")):
         raise invalid
 
     return {"id": row["id"], "email": row["email"]}
+
+
+def login_with_google(credential: str) -> dict:
+    """Verifies a Google Identity Services ID token (the `credential` the
+    browser gets from the Google button) and returns the matching user,
+    creating one if this email has never signed up.
+
+    An existing email/password account with the same email is reused, so a
+    user who signed up with a password and later clicks "Continue with
+    Google" lands in the same account (same Premium status and history).
+    That's only safe because we require Google's email_verified claim --
+    Google has confirmed this person controls the address."""
+    if not GOOGLE_CLIENT_ID:
+        raise AuthError("Google sign-in isn't configured on the server.")
+
+    # Imported here so the rest of the backend still runs if google-auth
+    # isn't installed (e.g. an old local venv).
+    from google.auth.transport import requests as google_requests
+    from google.oauth2 import id_token
+
+    try:
+        # Checks the signature against Google's public keys, the expiry, the
+        # issuer, and that the token was issued for OUR client ID (audience).
+        claims = id_token.verify_oauth2_token(credential, google_requests.Request(), GOOGLE_CLIENT_ID)
+    except ValueError:
+        raise AuthError("Google sign-in failed. Please try again.")
+
+    if not claims.get("email") or not claims.get("email_verified"):
+        raise AuthError("Your Google account's email isn't verified.")
+    email = _normalize_email(claims["email"])
+
+    conn = _get_conn()
+    try:
+        row = conn.execute("SELECT id, email FROM users WHERE email = ?", (email,)).fetchone()
+        if row is None:
+            try:
+                cur = conn.execute(
+                    "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)",
+                    (email, NO_PASSWORD_SENTINEL, int(time.time())),
+                )
+                conn.commit()
+                return {"id": cur.lastrowid, "email": email}
+            except sqlite3.IntegrityError:
+                # Created by a concurrent request in between -- just use it.
+                row = conn.execute("SELECT id, email FROM users WHERE email = ?", (email,)).fetchone()
+        return {"id": row["id"], "email": row["email"]}
+    finally:
+        conn.close()
 
 
 def _hash_reset_token(token: str) -> str:

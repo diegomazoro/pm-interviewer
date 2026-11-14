@@ -193,6 +193,29 @@ def login(req: LoginRequest):
     return {"token": token, "email": user["email"]}
 
 
+class GoogleLoginRequest(BaseModel):
+    # The ID token ("credential") returned to the browser by the Google
+    # Identity Services button -- verified server-side, never trusted as-is.
+    credential: str
+
+
+@app.post("/auth/google")
+def login_google(req: GoogleLoginRequest):
+    try:
+        user = auth.login_with_google(req.credential)
+    except auth.AuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    token = auth.issue_token(user["id"], user["email"])
+    return {"token": token, "email": user["email"]}
+
+
+@app.get("/auth/config")
+def auth_config():
+    # Lets the login page show the Google button only when the backend can
+    # actually verify Google tokens.
+    return {"google_enabled": bool(auth.GOOGLE_CLIENT_ID)}
+
+
 class ForgotPasswordRequest(BaseModel):
     email: str
     # Full URL of the frontend's reset-password page, e.g.

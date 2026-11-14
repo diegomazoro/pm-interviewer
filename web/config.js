@@ -32,6 +32,11 @@ const CONFIG = {
   backendUrl: "https://pm-interviewer-production.up.railway.app",
   agentId: "agent_6301kyvwxka2fmnbzcszcve9rdey",
 
+  // Google sign-in: the OAuth client ID from Google Cloud Console (it's
+  // public, not a secret). Must match GOOGLE_CLIENT_ID on the backend.
+  // Leave empty to hide the "Continue with Google" button.
+  googleClientId: "",
+
   cases: [
     {
       id: "case_04_pm_satisfaction_drop_figma",

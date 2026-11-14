@@ -43,6 +43,12 @@
         <button type="button" class="auth-tab" id="tab-signup">Sign Up</button>
       </div>
 
+      <div id="google-signin" style="display:none;">
+        <div id="google-signin-btn" class="google-signin-btn"></div>
+        <p class="auth-error" id="google-error-msg" style="display:none;"></p>
+        <div class="auth-divider"><span>or</span></div>
+      </div>
+
       <form id="auth-form">
         <label for="email">Email Address <span class="req">*</span></label>
         <div class="input-icon-wrap">
@@ -170,15 +176,78 @@
         errorMsg.style.display = "block";
         return;
       }
-      localStorage.setItem("loudcase_token", data.token);
-      localStorage.setItem("loudcase_email", data.email);
-      const next = new URLSearchParams(window.location.search).get("next");
-      window.location.href = next || "practice.html";
+      finishLogin(data);
     } catch (err) {
       errorMsg.textContent = `Request failed: ${err}`;
       errorMsg.style.display = "block";
     }
   });
+
+  function finishLogin(data) {
+    localStorage.setItem("loudcase_token", data.token);
+    localStorage.setItem("loudcase_email", data.email);
+    const next = new URLSearchParams(window.location.search).get("next");
+    window.location.href = next || "practice.html";
+  }
+
+  // ---- Google sign-in ----
+  // Works for both Sign In and Sign Up: the backend creates the account on
+  // first use. The button only appears when a client ID is configured here
+  // AND the backend reports it can verify Google tokens.
+  const googleBox = document.getElementById("google-signin");
+  const googleError = document.getElementById("google-error-msg");
+
+  async function handleGoogleCredential(response) {
+    googleError.style.display = "none";
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        googleError.textContent = data.detail || "Google sign-in failed. Please try again.";
+        googleError.style.display = "block";
+        return;
+      }
+      finishLogin(data);
+    } catch (err) {
+      googleError.textContent = "Google sign-in failed. Please try again.";
+      googleError.style.display = "block";
+    }
+  }
+
+  async function initGoogleSignIn() {
+    if (!CONFIG.googleClientId) return;
+    try {
+      const res = await fetch(`${CONFIG.backendUrl}/auth/config`);
+      const cfg = await res.json();
+      if (!cfg.google_enabled) return;
+    } catch (_) {
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = () => {
+      google.accounts.id.initialize({
+        client_id: CONFIG.googleClientId,
+        callback: handleGoogleCredential,
+      });
+      googleBox.style.display = "block";
+      const btn = document.getElementById("google-signin-btn");
+      google.accounts.id.renderButton(btn, {
+        theme: "filled_black",
+        size: "large",
+        shape: "pill",
+        text: "continue_with",
+        width: Math.min(btn.clientWidth || 400, 400),
+      });
+    };
+    document.head.appendChild(script);
+  }
+  initGoogleSignIn();
 </script>
 </body>
 </html>
