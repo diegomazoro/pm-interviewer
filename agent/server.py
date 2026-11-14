@@ -362,6 +362,46 @@ def transcript_to_anthropic_messages(messages: list) -> list:
     return out
 
 
+# ---- Prompt caching ----
+#
+# ElevenLabs resends the whole conversation on every turn, and every turn
+# starts with the same large interviewer prompt (rules + case materials).
+# Two cache breakpoints let Claude reuse that work instead of re-reading it:
+#   1. on the system prompt -- identical for every turn of a given case, so
+#      from turn 2 onward it's read from cache;
+#   2. on the last message -- caches the conversation so far, so the next
+#      turn only pays full price for the newest exchange.
+# Cache entries live 5 minutes (refreshed on every hit), which comfortably
+# covers the gap between turns of a live call. The system prompt must stay
+# byte-identical between turns for this to work -- don't add timestamps or
+# per-request ids to it.
+
+CACHE = {"type": "ephemeral"}
+
+
+def cached_system(system_prompt: str) -> list:
+    return [{"type": "text", "text": system_prompt, "cache_control": CACHE}]
+
+
+def with_history_cache_breakpoint(messages: list) -> list:
+    """Returns a copy of `messages` with a cache breakpoint on the last
+    message's content (the input list is left untouched)."""
+    if not messages:
+        return messages
+    out = list(messages)
+    last = out[-1]
+    content = last["content"]
+    if isinstance(content, str):
+        blocks = [{"type": "text", "text": content}]
+    else:
+        blocks = [dict(b) for b in content]
+    if not blocks or not blocks[-1].get("text"):
+        return out  # empty text blocks can't carry cache_control
+    blocks[-1]["cache_control"] = CACHE
+    out[-1] = {**last, "content": blocks}
+    return out
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(
     request: Request,
@@ -478,8 +518,8 @@ async def chat_completions(
             with client.messages.stream(
                 model=MODEL,
                 max_tokens=500,
-                system=system_prompt,
-                messages=anthropic_messages,
+                system=cached_system(system_prompt),
+                messages=with_history_cache_breakpoint(anthropic_messages),
             ) as stream:
                 for text in stream.text_stream:
                     reply_chunks.append(text)
@@ -490,6 +530,12 @@ async def chat_completions(
                         "model": MODEL,
                         "choices": [{"index": 0, "delta": {"role": "assistant", "content": text}, "finish_reason": None}],
                     })
+                usage = stream.get_final_message().usage
+                logger.info(
+                    "chat_completions: tokens -- cache_read=%s cache_write=%s uncached=%s output=%s",
+                    usage.cache_read_input_tokens, usage.cache_creation_input_tokens,
+                    usage.input_tokens, usage.output_tokens,
+                )
         except Exception as exc:
             # A transient Claude API error (rate limit, timeout, etc.)
             # mid-stream -- have the interviewer say *something* instead of
