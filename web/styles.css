@@ -872,46 +872,169 @@ nav a {
   flex-grow: 1;
 }
 
-/* practice.html: one card per company, with a row per case (skill badge,
-   one-line description, Start button). */
-.company-card {
-  align-self: start;
+/* ---- Case library: company grid (practice.html) ---- */
+.wrap-wide {
+  max-width: 1080px;
 }
 
-.company-case-count {
+.company-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.company-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.company-tile:hover,
+.company-tile:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.company-tile-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.company-tile-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.company-tile-head p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.company-tile-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   color: var(--text-muted);
   font-size: 13px;
 }
 
+.company-tile-cta {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .company-tile,
+  .company-tile:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .company-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .company-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Case library: one company's cases (company.html) ---- */
+.company-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.company-header h1 {
+  margin: 0;
+}
+
+.company-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+.case-icon-lg {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 22px;
+}
+
+.company-intro {
+  margin: 24px 0 8px;
+  color: var(--text-muted);
+}
+
 .company-case-list {
   list-style: none;
-  margin: 0;
+  margin: 16px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .company-case {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
+  gap: 20px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius);
 }
 
 .company-case-text {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
-.company-case .btn {
-  align-self: center;
-  flex-shrink: 0;
-  padding: 6px 16px;
+.company-case-text h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.company-case-text p {
+  margin: 0;
+  color: var(--text-muted);
   font-size: 14px;
+}
+
+.company-case .btn {
+  flex-shrink: 0;
+  padding: 8px 22px;
+  font-size: 14px;
+}
+
+@media (max-width: 560px) {
+  .company-case {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .company-case .btn {
+    text-align: center;
+  }
 }
 
 /* Small, scoped tweaks to the landing page's "See what real feedback

@@ -47,83 +47,41 @@
   </div>
 </nav>
 
-<div class="wrap">
-  <h1>Choose a live case</h1>
-  <p style="color: var(--text-muted)">Talk with an interviewer that presents you a live case modeled on real PM challenges at top tech companies.</p>
+<div class="wrap wrap-wide">
+  <h1>Choose a company</h1>
+  <p style="color: var(--text-muted)">Each company has 5 live cases, one for each core PM skill. Pick one to see its cases.</p>
 
-  <div class="filter-bar" id="filter-bar">
-    <button type="button" class="filter-chip active" data-filter="all">All</button>
-    <button type="button" class="filter-chip" data-filter="Diagnosis">Diagnosis</button>
-    <button type="button" class="filter-chip" data-filter="Product Sense">Product sense</button>
-    <button type="button" class="filter-chip" data-filter="Prioritization">Prioritization</button>
-    <button type="button" class="filter-chip" data-filter="Metrics &amp; Experiments">Metrics &amp; experiments</button>
-    <button type="button" class="filter-chip" data-filter="Strategy &amp; Growth">Strategy &amp; growth</button>
-  </div>
-
-  <div class="case-grid" id="case-grid"></div>
+  <div class="company-grid" id="company-grid"></div>
 </div>
 
 <script src="config.js"></script>
+<script src="catalog.js"></script>
 <script src="auth.js"></script>
 <script>
   if (!requireLogin()) {
     // requireLogin() already redirected to login.html
   } else {
   wireAccountNav();
-  const grid = document.getElementById("case-grid");
-  const filterBar = document.getElementById("filter-bar");
-  let activeFilter = "all";
-
-  // One card per company, listing that company's cases in a fixed skill
-  // order. Companies keep the order they first appear in CONFIG.cases.
-  // The skill filter hides non-matching cases, and any company left with
-  // none.
-  const SKILL_ORDER = ["Diagnosis", "Product Sense", "Prioritization", "Metrics & Experiments", "Strategy & Growth"];
-
-  function renderCases() {
-    grid.innerHTML = "";
-    const companies = new Map();
-    CONFIG.cases
-      .filter((c) => activeFilter === "all" || c.skill === activeFilter)
-      .forEach((c) => {
-        if (!companies.has(c.title)) companies.set(c.title, []);
-        companies.get(c.title).push(c);
-      });
-
-    companies.forEach((cases, company) => {
-      cases.sort((a, b) => SKILL_ORDER.indexOf(a.skill) - SKILL_ORDER.indexOf(b.skill));
-      const card = document.createElement("div");
-      card.className = "case-card company-card";
-      card.innerHTML = `
-        <div class="case-card-head">
-          <h3>${company}</h3>
-          <span class="company-case-count">${cases.length} ${cases.length === 1 ? "case" : "cases"}</span>
+  const grid = document.getElementById("company-grid");
+  companiesFromConfig().forEach((co) => {
+    const tile = document.createElement("a");
+    tile.className = "company-tile";
+    tile.href = companyUrl(co.name);
+    tile.innerHTML = `
+      <div class="company-tile-head">
+        <span class="case-icon" aria-hidden="true">${escapeHtml(co.name.charAt(0))}</span>
+        <div>
+          <h3>${escapeHtml(co.name)}</h3>
+          <p>${escapeHtml(co.tagline)}</p>
         </div>
-        <ul class="company-case-list">
-          ${cases.map((c) => `
-            <li class="company-case">
-              <div class="company-case-text">
-                <span class="badge">${c.skill}</span>
-                <p>${c.subtitle}</p>
-              </div>
-              <a class="btn" href="session.html?case=${encodeURIComponent(c.id)}">Start</a>
-            </li>
-          `).join("")}
-        </ul>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  filterBar.querySelectorAll(".filter-chip").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      activeFilter = btn.dataset.filter;
-      filterBar.querySelectorAll(".filter-chip").forEach((b) => b.classList.toggle("active", b === btn));
-      renderCases();
-    });
+      </div>
+      <div class="company-tile-foot">
+        <span>${co.cases.length} ${co.cases.length === 1 ? "case" : "cases"}</span>
+        <span class="company-tile-cta">View cases <span aria-hidden="true">&rarr;</span></span>
+      </div>
+    `;
+    grid.appendChild(tile);
   });
-
-  renderCases();
   }
 </script>
 

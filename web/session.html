@@ -55,11 +55,11 @@
 
   <div id="session-content" style="display:none;">
     <div class="session-header">
-      <a href="practice.html" class="back-link">
+      <a href="practice.html" class="back-link" id="back-link">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path d="M12.5 4.5L6 10l6.5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Back to cases
+        <span id="back-link-label">Back to cases</span>
       </a>
       <h1 id="case-title"></h1>
       <p id="case-subtitle"></p>
@@ -108,6 +108,7 @@
 </div>
 
 <script src="config.js"></script>
+<script src="catalog.js"></script>
 <script src="auth.js"></script>
 <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async></script>
 <script>
@@ -128,6 +129,8 @@
     document.getElementById("session-content").style.display = "block";
     document.getElementById("case-title").textContent = caseInfo.title;
     document.getElementById("case-subtitle").textContent = caseInfo.subtitle;
+    document.getElementById("back-link").href = companyUrl(caseInfo.title);
+    document.getElementById("back-link-label").textContent = `Back to ${caseInfo.title}`;
 
     // One shared Agent for the whole library -- which case runs is passed
     // per-conversation via dynamic-variables, which fills in the
